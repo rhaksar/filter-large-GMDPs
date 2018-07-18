@@ -5,6 +5,7 @@ from matplotlib import cm
 import matplotlib.patches as patches
 import numpy as np
 import pdb
+import pickle
 import sys
 import lbp
 import time
@@ -17,23 +18,46 @@ def simulate(nsteps, forest):
     forest.reset()
 
     # Get first measurement
-    measurement = forestMeasurement(forest)
+    # measurement = forestMeasurement(forest)
 
     # Robot (that performs LBP)
-    robot = lbp.robot(W, H)
+    # robot = lbp.robot(W, H)
+    # robot.measure(measurement)
+    # robot.advance()
+
+    robot = lbp.robot(W, H, maxIterations=4, horizon=2)
+
+    # uniform initial belief
+    # measurement = np.zeros((W, H))
+    # robot.measure(measurement)
+    # robot.advance()
+    # robot.confidence = 0.33*np.ones((W, H))
+
+    # exact initial belief
+    measurement = np.array(forest.state)
     robot.measure(measurement)
     robot.advance()
+    robot.confidence = 1.0*np.ones((W, H))
 
     # Error
-    errors = np.zeros((2, nsteps))
-    compTime = np.zeros(nsteps-1)
+    errors = {}
+    errors['robotE'] = []
+    errors['measurementE'] = []
+    compTime = []
+
+    # compTime = np.zeros(nsteps - 1)
+    # errors = np.zeros((2, nsteps))
     robotE = errorTotal(forest.state, robot.estimate)
     measurementE = errorTotal(forest.state, measurement)
-    errors[:,0] = np.array([robotE, measurementE])
-    print robotE, measurementE
+    # errors[:,0] = np.array([robotE, measurementE])
+    # print robotE, measurementE
 
+    iteration = 0
     # Simulate, and calculate error at each time
-    for i in range(nsteps - 1):
+    # for _ in range(nsteps):
+    while not forest.end:
+        iteration += 1
+
         forest.advance()
         measurement = forestMeasurement(forest)
 
@@ -41,13 +65,16 @@ def simulate(nsteps, forest):
         robot.measure(measurement)
         robot.advance()
         t1 = time.time()
-        compTime[i] = t1 - t0
+        compTime.append(t1 - t0)
 
         # Compute error metric
         robotE = errorTotal(forest.state, robot.estimate)
         measurementE = errorTotal(forest.state, measurement)
-        errors[:,i+1] = np.array([robotE, measurementE])
-        print robotE, measurementE
+        errors['robotE'].append(robotE)
+        errors['measurementE'].append(measurementE)
+        # errors[:,i+1] = np.array([robotE, measurementE])
+        print iteration, robotE, measurementE
+
 
     return errors, compTime
 
@@ -180,24 +207,43 @@ def plot(forest):
 
 
 if __name__ == '__main__':
-    W = 5 # width
-    H = 5 # height
-    T = 20 # number of time steps
+    W = 10  # width
+    H = 10  # height
+    T = 2  # number of time steps
 
     # Initialize forest
     f = ff.forest(W, H)
 
     # Run simulation
-    N = 10 # number of simulations to run
-    errors = np.zeros((N,2,T))
-    times = np.zeros((N,T-1))
+    N = 1  # number of simulations to run
+    errors = {}
+    # errors = np.zeros((N,2,T))
+    # times = np.zeros((N,T-1))
     for i in range(N):
-        errori, timei = simulate(T,f)
-        errors[i,:] = errori
-        times[i,:] = timei
+        seed = 1000+i
+        np.random.seed(seed)
+
+        errori, timei = simulate(T, f)
+        errors[seed] = errori
+        print('total time:',sum(timei),'seconds')
+
+        # errors[i,:] = errori
+        # times[i,:] = timei
+
+    filename = 'lbp_wh'+str(W*H)+'_s'+str(N)+'.pkl'
+    output = open(filename,'wb')
+    pickle.dump(errors, output)
+    output.close()
 
     # Save data
-    np.save('errors', errors)
-    np.save('times', times)
+    # np.save('errors', errors)
+    # np.save('times', times)
 
+    for s in errors.keys():
+        measurementE_pct = [(100*e)/(W*H) for e in errors[s]['measurementE']]
+        robotE_pct = [(100*e)/(W*H) for e in errors[s]['robotE']]
+        print 'median measurement error:', np.median(measurementE_pct)
+        print 'median state error:', np.median(robotE_pct)
+
+    print('end of file')
 
