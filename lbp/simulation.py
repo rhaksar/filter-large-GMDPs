@@ -1,17 +1,17 @@
+from datetime import datetime
+
 import forest_fire_dynamics as ff
 import matplotlib.pyplot as plt
 import matplotlib.animation as ani
 from matplotlib import cm
-import matplotlib.patches as patches
 import numpy as np
 import pdb
 import pickle
-import sys
 import lbp
 import time
 
 
-def simulate(nsteps, forest):
+def simulate(nsteps, forest, maxIterations=10, horizon=2):
     """ Perform simulation """
 
     # Make sure forest is reset to original state
@@ -25,7 +25,7 @@ def simulate(nsteps, forest):
     # robot.measure(measurement)
     # robot.advance()
 
-    robot = lbp.robot(W, H, maxIterations=4, horizon=2)
+    robot = lbp.robot(W, H, maxIterations=maxIterations, horizon=horizon)
 
     # uniform initial belief
     # measurement = np.zeros((W, H))
@@ -47,15 +47,15 @@ def simulate(nsteps, forest):
 
     # compTime = np.zeros(nsteps - 1)
     # errors = np.zeros((2, nsteps))
-    robotE = errorTotal(forest.state, robot.estimate)
-    measurementE = errorTotal(forest.state, measurement)
+    # robotE = errorTotal(forest.state, robot.estimate)
+    # measurementE = errorTotal(forest.state, measurement)
     # errors[:,0] = np.array([robotE, measurementE])
     # print robotE, measurementE
 
     iteration = 0
     # Simulate, and calculate error at each time
-    # for _ in range(nsteps):
-    while not forest.end:
+
+    while True:
         iteration += 1
 
         forest.advance()
@@ -72,9 +72,15 @@ def simulate(nsteps, forest):
         measurementE = errorTotal(forest.state, measurement)
         errors['robotE'].append(robotE)
         errors['measurementE'].append(measurementE)
-        # errors[:,i+1] = np.array([robotE, measurementE])
-        print iteration, robotE, measurementE
+        # print iteration, robotE, measurementE
 
+        # Break if iteration limit is reach or no more fire
+        if nsteps is None:
+            if forest.end:
+                break
+        else:
+            if nsteps >= iteration:
+                break
 
     return errors, compTime
 
@@ -207,43 +213,58 @@ def plot(forest):
 
 
 if __name__ == '__main__':
+    # Simulation parameters
     W = 10  # width
     H = 10  # height
-    T = 2  # number of time steps
+    T = None  # number of time steps, T=None runs simulation until no more fire
 
     # Initialize forest
     f = ff.forest(W, H)
 
+    # Filter parameters
+    maxIterations = 10
+    horizon = 3
+
     # Run simulation
     N = 1  # number of simulations to run
     errors = {}
-    # errors = np.zeros((N,2,T))
-    # times = np.zeros((N,T-1))
+    errors['width'] = W
+    errors['height'] = H
+    errors['maxIterations'] = maxIterations
+    errors['horizon'] = horizon
+
+    st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+    print '[%s] start' % st
+
+    t0 = time.clock()
     for i in range(N):
         seed = 1000+i
         np.random.seed(seed)
 
-        errori, timei = simulate(T, f)
+        errori, timei = simulate(T, f, maxIterations=maxIterations, horizon= horizon)
         errors[seed] = errori
-        print('total time:',sum(timei),'seconds')
+        # print 'total time:', sum(timei), 'seconds'
 
-        # errors[i,:] = errori
-        # times[i,:] = timei
+        if (i+1) % 10 == 0:
+            st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+            print '[%s] finished %d simulations' %(st, i+1)
 
-    filename = 'lbp_wh'+str(W*H)+'_s'+str(N)+'.pkl'
+    st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+    print '[%s] finish' % st
+
+    t1 = time.clock()
+    print '%0.2fs = %0.2fm elapsed' % (t1-t0,(t1-t0)/60)
+
+    # Save data as pickle file
+    filename = 'lbp_wh' + str(W*H) \
+               + '_i' + str(maxIterations) \
+               + '_h' + str(horizon) + '_s'+str(N)+'.pkl'
     output = open(filename,'wb')
     pickle.dump(errors, output)
     output.close()
 
-    # Save data
-    # np.save('errors', errors)
-    # np.save('times', times)
-
-    for s in errors.keys():
-        measurementE_pct = [(100*e)/(W*H) for e in errors[s]['measurementE']]
-        robotE_pct = [(100*e)/(W*H) for e in errors[s]['robotE']]
-        print 'median measurement error:', np.median(measurementE_pct)
-        print 'median state error:', np.median(robotE_pct)
-
-    print('end of file')
-
+    # for s in errors.keys():
+    #     measurementE_pct = [(100*e)/(W*H) for e in errors[s]['measurementE']]
+    #     robotE_pct = [(100*e)/(W*H) for e in errors[s]['robotE']]
+    #     print 'median measurement error:', np.median(measurementE_pct)
+    #     print 'median state error:', np.median(robotE_pct)
