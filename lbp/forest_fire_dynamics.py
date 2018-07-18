@@ -1,6 +1,8 @@
+import itertools
+import math
+import matplotlib.pyplot as plt
 import numpy as np
 import sys
-import matplotlib.pyplot as plt
 import pdb
 
 class tree:
@@ -77,6 +79,9 @@ class forest:
         self.seed_fire() # Start the fire at a location near middle
         self.query_state()
 
+        self.end = False # indicates if simulation has terminated
+                         # True when no fire
+
         # Create data structure to hold information
         col = np.array([range(self.W) for i in range(self.H)]).flatten()
         row = np.array([[i]*self.W for i in range(self.H)]).flatten()
@@ -96,15 +101,33 @@ class forest:
 
 
     def seed_fire(self):
-        """ Seeds a single tree to be one fire """
-        row = int(self.H/2)
-        col = int(self.W/2)
-        self.forest[row][col].state = 1
+        # """ Seeds a single tree to be one fire """
+        # row = int(self.H/2)
+        # col = int(self.W/2)
+        # self.forest[row][col].state = 1
+
+        """ Seeds a grid of trees on fire """
+        row_center = int(math.ceil(self.H/2))
+        col_center = int(math.ceil(self.W/2))
+        deltas = [k for k in range(-1,3)]
+        deltas = itertools.product(deltas,deltas)
+
+        for (drow,dcol) in deltas:
+            row = row_center + drow
+            col = col_center + dcol
+            self.forest[row][col].state = 1
+
         self.query_state()
 
 
     def advance(self):
         """ Simulates one time step """
+
+        # if no more fire, return
+        if self.end:
+            print 'process has terminated'
+            return
+
         for row in range(self.H):
             for col in range(self.W):
                 self.forest[row][col].update(self.state)
@@ -114,6 +137,11 @@ class forest:
         s = np.array(self.state).flatten()
         self.data['state'] = np.vstack((self.data['state'],s))
 
+        # check if no more fires
+        if np.any(np.array(self.state) == 1):
+            self.end = False
+        else:
+            self.end = True
 
     def query_state(self):
         """ Generates matrix of current forest state """
