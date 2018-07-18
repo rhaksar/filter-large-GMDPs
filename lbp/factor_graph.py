@@ -84,7 +84,7 @@ class FactorGraph:
             return self.messagesFactorToVar[(src, dst)]
 
 
-    def runParallelLoopyBP(self, maxIterations): 
+    def runParallelLoopyBP(self, maxIterations):
         '''
         param - iterations: the number of iterations you do loopy BP
           
@@ -98,6 +98,9 @@ class FactorGraph:
         numVariables = len(self.var)
         xhatPrev = np.zeros(numVariables)
         xhat = np.zeros(numVariables)
+
+        status = []
+        converged = False
 
         # First initialize all messages to and from each factor
         for (i,f) in enumerate(self.factors):
@@ -158,9 +161,21 @@ class FactorGraph:
             change = float(np.where(xhat != xhatPrev)[0].size)
             # print change/numVariables
             if change/numVariables <= .01:
+                converged = True
                 break
 
             xhatPrev = np.copy(xhat)
+
+        if converged:
+            # print 'LBP converged after %d iterations' % (it + 1)
+            status.append('Converged')
+            status.append(it)
+        else:
+            print 'LBP unable to converge after %d iterations' % (it+1)
+            status.append('Cutoff')
+            status.append(it)
+
+        return status
 
 
     def estimateMarginalProbability(self, var):
