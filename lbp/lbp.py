@@ -254,7 +254,7 @@ class robot:
             self.graph.addNewLayer(self.measurement)
 
             # Run LBP
-            print "Running LBP"
+            # print "Running LBP"
             self.graph.G.runParallelLoopyBP(self.maxIterations)
 
             self.query_estimate()
@@ -276,7 +276,7 @@ class robot:
             for i in range(1, self.h):
                 self.graph.addNewLayer(measurements[i])
 
-            print "Running LBP"
+            # print "Running LBP"
             self.graph.G.runParallelLoopyBP(self.maxIterations)
 
             self.query_estimate()
