@@ -202,18 +202,24 @@ class robot:
     """ This class is a wrapper to perform the high level implementation
     of Loopy Belief Propagation """
 
-    def __init__(self, W, H):
+    def __init__(self, W, H, initialEstimate=None, maxIterations=10, horizon=5):
         self.W = W
         self.H = H
         N = W*H
 
         # Initialize graph
         self.graph = LBPFilter(W, H)
-        self.maxIterations = 10 # for each LBP run
+        self.maxIterations = maxIterations # for each LBP run
 
         # Initialize estimates
-        self.estimate = np.zeros((H, W))
-        self.confidence = 0.5*np.ones((H, W))
+        # self.estimate = np.zeros((H, W))
+        # self.confidence = 0.5*np.ones((H, W))
+        if initialEstimate is None:
+            self.estimate = np.zeros((H, W))
+            self.confidence = 0.33*np.ones((H, W))
+        else:
+            self.estimate = initialEstimate
+            self.confidence = np.ones((H, W))
         
         # To store data in
         col = np.array([range(self.W) for i in range(self.H)]).flatten()
@@ -225,7 +231,7 @@ class robot:
         # Horizon for LBP graph growth, after it has this many time steps
         # it will truncate the end to maintain this size (keeps computation
         # time to a constant in time)
-        self.h = 5
+        self.h = horizon
 
 
     def measure(self, noisyMeasurement):
