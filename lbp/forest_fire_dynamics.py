@@ -97,25 +97,26 @@ class forest:
         for row in range(self.H):
             for col in range(self.W):
                 self.forest[row][col].state = 0
+        self.end = False
         self.seed_fire()
 
 
     def seed_fire(self):
         # """ Seeds a single tree to be one fire """
-        # row = int(self.H/2)
-        # col = int(self.W/2)
-        # self.forest[row][col].state = 1
+        row = int(self.H/2)
+        col = int(self.W/2)
+        self.forest[row][col].state = 1
 
-        """ Seeds a grid of trees on fire """
-        row_center = int(math.ceil(self.H/2))
-        col_center = int(math.ceil(self.W/2))
-        deltas = [k for k in range(-1,3)]
-        deltas = itertools.product(deltas,deltas)
-
-        for (drow,dcol) in deltas:
-            row = row_center + drow
-            col = col_center + dcol
-            self.forest[row][col].state = 1
+        # """ Seeds a grid of trees on fire """
+        # row_center = int(math.ceil(self.H/2))
+        # col_center = int(math.ceil(self.W/2))
+        # deltas = [k for k in range(-1,3)]
+        # deltas = itertools.product(deltas,deltas)
+        #
+        # for (drow,dcol) in deltas:
+        #     row = row_center + drow
+        #     col = col_center + dcol
+        #     self.forest[row][col].state = 1
 
         self.query_state()
 
