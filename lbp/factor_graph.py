@@ -166,12 +166,12 @@ class FactorGraph:
 
             xhatPrev = np.copy(xhat)
 
-        if converged:
+        if maxIterations > 1 and converged:
             # print 'LBP converged after %d iterations' % (it + 1)
             status.append('Converged')
             status.append(it)
-        else:
-            print 'LBP unable to converge after %d iterations' % (it+1)
+        elif maxIterations > 1:
+            # print 'LBP unable to converge after %d iterations' % (it+1)
             status.append('Cutoff')
             status.append(it)
 
