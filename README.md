@@ -11,3 +11,4 @@ A repository for methods to perform state estimation for graph-based MDPs. All m
 - `message passing.ipynb`: Message-passing algorithm based on the variational inference framework 
 - `node bayes filter.ipynb`: Experimental method using a Bayes filter for each graph vertex
 - `scratch variational inference.ipynb`: Code to investigate using variational inference
+- `visualize data.ipynb`: Load and display data files
