@@ -214,19 +214,19 @@ def plot(forest):
 
 if __name__ == '__main__':
     # Simulation parameters
-    W = 10  # width
-    H = 10  # height
+    W = 2  # width
+    H = 2  # height
     T = None  # number of time steps, T=None runs simulation until no more fire
 
     # Initialize forest
     f = ff.forest(W, H)
 
     # Filter parameters
-    maxIterations = 10
+    maxIterations = 1
     horizon = 3
 
     # Run simulation
-    N = 1  # number of simulations to run
+    N = 20  # number of simulations to run
     errors = {}
     errors['width'] = W
     errors['height'] = H
@@ -241,13 +241,20 @@ if __name__ == '__main__':
         seed = 1000+i
         np.random.seed(seed)
 
-        errori, timei = simulate(T, f, maxIterations=maxIterations, horizon= horizon)
+        errori, timei = simulate(T, f, maxIterations=maxIterations, horizon=horizon)
         errors[seed] = errori
         # print 'total time:', sum(timei), 'seconds'
 
         if (i+1) % 10 == 0:
             st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
             print '[%s] finished %d simulations' %(st, i+1)
+
+            filename = '[SAVE] ' + 'lbp_wh' + str(W*H) + \
+                       '_i' + str(maxIterations) + \
+                       '_h' + str(horizon) + '_s' + str(i+1) + '.pkl'
+            output = open(filename, 'wb')
+            pickle.dump(errors, output)
+            output.close()
 
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
     print '[%s] finish' % st
@@ -258,8 +265,8 @@ if __name__ == '__main__':
     # Save data as pickle file
     filename = 'lbp_wh' + str(W*H) \
                + '_i' + str(maxIterations) \
-               + '_h' + str(horizon) + '_s'+str(N)+'.pkl'
-    output = open(filename,'wb')
+               + '_h' + str(horizon) + '_s' + str(N) + '.pkl'
+    output = open(filename, 'wb')
     pickle.dump(errors, output)
     output.close()
 
