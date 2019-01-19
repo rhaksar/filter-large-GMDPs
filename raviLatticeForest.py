@@ -1,7 +1,9 @@
 from collections import defaultdict
+import copy
 import numpy as np
 import os
 import sys
+import time
 
 sys.path.append(os.getcwd() + '/simulators')
 
@@ -31,22 +33,29 @@ def linear_approx(x, epsilon=1e-10):
 
 
 class RAVI(object):
+    """
+    Class implementation of the RAVI method, specifically for the LatticeForest simulator
+    """
     def __init__(self, prior, iteration_limit=1, epsilon=1e-10):
         self.healthy = 0
         self.on_fire = 1
         self.burnt = 2
 
         self.prior = prior
-        self.posterior = None
 
         self.iteration_limit = iteration_limit
         self.epsilon = epsilon
 
+    """
+    Produce posterior factors. 
+    """
     def filter(self, simulation, observation):
         graph = dict()
 
         # initialize posterior as prior
-        posterior = self.prior
+        posterior = np.copy(self.prior)
+        # posterior = 0.33*np.ones_like(self.prior)
+        # posterior = posterior / posterior.sum(axis=2, keepdims=True)
 
         # initialize of message for each element
         for element in simulation.forest.values():
@@ -57,7 +66,7 @@ class RAVI(object):
         # perform message-passing to update posterior factors
         status = 'iteration limit reached'
         for iteration in range(self.iteration_limit):
-            num_converged = 0
+            num_changed = 0
             for element in simulation.forest.values():
                 key = tuple(element.position)
                 num_neighbors = len(element.neighbors)
@@ -85,7 +94,6 @@ class RAVI(object):
 
                 # construct candidate message, a function of x_{i}^{t-1} and x_{i}^{t}
                 graph[key]['candidate'] = np.zeros((len(element.state_space), len(element.state_space)))
-                # first compute marginalization of dynamics times neighbors' message
                 for s_t in element.state_space:
                     for s_tm1 in element.state_space:
                         for active in range(num_neighbors+1):
@@ -119,8 +127,8 @@ class RAVI(object):
                     normalization += q[idx]
 
                 q /= normalization
-                if np.argmax(q) == np.argmax(posterior[element.position[0], element.position[1], :]):
-                    num_converged += 1
+                if np.argmax(q) != np.argmax(posterior[element.position[0], element.position[1], :]):
+                    num_changed += 1
                 posterior[element.position[0], element.position[1], :] = q
 
                 # calculate next message
@@ -135,10 +143,21 @@ class RAVI(object):
                     graph[key]['next_message'][s_tm1] = multiply_probabilities(values)
 
                 # normalize next message
-                graph[key]['next_message'] /= graph[key]['next_message'].sum()
+                d = graph[key]['next_message']
+                d = [v-max(d) for v in d]
+                normalization = 0
+                for idx, v in enumerate(d):
+                    if v <= -100:
+                        d[idx] = 0
+                        continue
+
+                    d[idx] = np.exp(v)
+                    normalization += d[idx]
+                d /= normalization
+                graph[key]['next_message'] = d
 
             # if less than 1% of nodes are changing their max likelihood estimate, break
-            if num_converged/np.prod(simulation.dims) <= 0.01:
+            if iteration > 1 and num_changed/np.prod(simulation.dims) <= 0.01:
                 status = 'converged'
                 break
 
@@ -147,7 +166,7 @@ class RAVI(object):
                 key = tuple(element.position)
                 graph[key]['message'] = graph[key]['next_message']
 
-        self.posterior = posterior
+        self.prior = posterior
         return posterior, status
 
 
@@ -158,7 +177,9 @@ if __name__ == '__main__':
     np.random.seed(seed)
 
     sim = LatticeForest(dimension, rng=seed)
+    num_trees = np.prod(sim.dims)
 
+    # initial belief
     belief = np.zeros((sim.dims[0], sim.dims[1], 3))
     state = sim.dense_state()
     p = np.where(state == 0)
@@ -169,37 +190,34 @@ if __name__ == '__main__':
     belief[p[0], p[1], :] = [0, 0, 1]
     belief = belief / belief.sum(axis=2, keepdims=True)
 
-    robot = RAVI(belief, iteration_limit=10, epsilon=1e-10)
+    robot = RAVI(belief, iteration_limit=1, epsilon=1e-5)
 
-    observation_errors = []
-    filter_errors = []
+    observation_acc = []
+    filter_acc = []
     # for _ in range(5):
     while not sim.end:
         sim.update(control)
         state = sim.dense_state()
 
         obs = get_forest_observation(sim)
-        obs_err = np.sum(obs != state)
+        obs_acc = np.sum(obs == state)
         # print(sim.dense_state())
         # print(obs)
 
-        belief, _ = robot.filter(sim, obs)
+        belief, status = robot.filter(sim, obs)
         estimate = np.argmax(belief, axis=2)
-        filter_err = np.sum(estimate != state)
+        f_acc = np.sum(estimate == state)
         # print(belief)
         # print(estimate)
-        print('errors:', filter_err)
+        print('observation/filter accuracy: %0.2f / %0.2f [%s]' % (obs_acc*100/num_trees, f_acc*100/num_trees, status))
 
-        filter_errors.append(filter_err)
-        observation_errors.append(obs_err)
+        observation_acc.append(obs_acc)
+        filter_acc.append(f_acc)
 
-    grid_size = sim.dims[0]*sim.dims[1]
-    print('observation, filter min error: %0.4f, %0.4f' % (np.amin(observation_errors) * 100 / grid_size,
-                                                           np.amin(filter_errors) * 100 / grid_size))
-    print('observation, filter median error: %0.4f, %0.4f' % (np.median(observation_errors)*100/grid_size,
-                                                              np.median(filter_errors)*100/grid_size))
-    print('observation, filter max error: %0.4f, %0.4f' % (np.amax(observation_errors) * 100 / grid_size,
-                                                           np.amax(filter_errors) * 100 / grid_size))
-    print('observation, filter error variance: %0.4f, %0.4f' % (np.var(observation_errors) * 100 / grid_size,
-                                                                np.var(filter_errors) * 100 / grid_size))
+    print('observation, filter min accuracy: %0.4f, %0.4f' % (np.amin(observation_acc)*100/num_trees,
+                                                              np.amin(filter_acc)*100/num_trees))
+    print('observation, filter median accuracy: %0.4f, %0.4f' % (np.median(observation_acc)*100/num_trees,
+                                                                 np.median(filter_acc)*100/num_trees))
+    print('observation, filter max accuracy: %0.4f, %0.4f' % (np.amax(observation_acc)*100/num_trees,
+                                                              np.amax(filter_acc)*100/num_trees))
     print()
