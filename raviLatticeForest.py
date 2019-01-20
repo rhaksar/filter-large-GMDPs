@@ -1,7 +1,8 @@
 from collections import defaultdict
-import copy
+from datetime import datetime
 import numpy as np
 import os
+import pickle
 import sys
 import time
 
@@ -34,7 +35,7 @@ def linear_approx(x, epsilon=1e-10):
 
 class RAVI(object):
     """
-    Class implementation of the RAVI method, specifically for the LatticeForest simulator
+    Class implementation of the RAVI method for the LatticeForest simulator
     """
     def __init__(self, prior, iteration_limit=1, epsilon=1e-10):
         self.healthy = 0
@@ -46,10 +47,11 @@ class RAVI(object):
         self.iteration_limit = iteration_limit
         self.epsilon = epsilon
 
-    """
-    Produce posterior factors. 
-    """
     def filter(self, simulation, observation):
+        """
+        Produce posterior factors.
+        """
+        tic = time.clock()
         graph = dict()
 
         # initialize posterior as prior
@@ -64,7 +66,7 @@ class RAVI(object):
             graph[key]['message'] = self.prior[element.position[0], element.position[1], :]
 
         # perform message-passing to update posterior factors
-        status = 'iteration limit reached'
+        status = ['Cutoff', self.iteration_limit]
         for iteration in range(self.iteration_limit):
             num_changed = 0
             for element in simulation.forest.values():
@@ -158,7 +160,7 @@ class RAVI(object):
 
             # if less than 1% of nodes are changing their max likelihood estimate, break
             if iteration > 1 and num_changed/np.prod(simulation.dims) <= 0.01:
-                status = 'converged'
+                status = ['Converged', iteration]
                 break
 
             # update messages for next round
@@ -166,22 +168,18 @@ class RAVI(object):
                 key = tuple(element.position)
                 graph[key]['message'] = graph[key]['next_message']
 
+        toc = time.clock()
         self.prior = posterior
-        return posterior, status
+        return posterior, status, toc-tic
 
 
-if __name__ == '__main__':
-    dimension = 25
+def run_simulation(sim_object, iteration_limit, epsilon):
+    num_trees = np.prod(sim_object.dims)
     control = defaultdict(lambda: (0, 0))
-    seed = 1000
-    np.random.seed(seed)
-
-    sim = LatticeForest(dimension, rng=seed)
-    num_trees = np.prod(sim.dims)
 
     # initial belief
-    belief = np.zeros((sim.dims[0], sim.dims[1], 3))
-    state = sim.dense_state()
+    belief = np.zeros((sim_object.dims[0], sim_object.dims[1], 3))
+    state = sim_object.dense_state()
     p = np.where(state == 0)
     belief[p[0], p[1], :] = [1, 0, 0]
     p = np.where(state == 1)
@@ -190,34 +188,79 @@ if __name__ == '__main__':
     belief[p[0], p[1], :] = [0, 0, 1]
     belief = belief / belief.sum(axis=2, keepdims=True)
 
-    robot = RAVI(belief, iteration_limit=1, epsilon=1e-5)
+    robot = RAVI(belief, iteration_limit=iteration_limit, epsilon=epsilon)
 
     observation_acc = []
     filter_acc = []
-    # for _ in range(5):
-    while not sim.end:
-        sim.update(control)
-        state = sim.dense_state()
+    update_time = []
 
-        obs = get_forest_observation(sim)
-        obs_acc = np.sum(obs == state)
-        # print(sim.dense_state())
-        # print(obs)
+    while not sim_object.end:
+        sim_object.update(control)
+        state = sim_object.dense_state()
 
-        belief, status = robot.filter(sim, obs)
+        obs = get_forest_observation(sim_object)
+        obs_acc = np.sum(obs == state)/num_trees
+
+        belief, status, timing = robot.filter(sim_object, obs)
         estimate = np.argmax(belief, axis=2)
-        f_acc = np.sum(estimate == state)
-        # print(belief)
-        # print(estimate)
-        print('observation/filter accuracy: %0.2f / %0.2f [%s]' % (obs_acc*100/num_trees, f_acc*100/num_trees, status))
+        f_acc = np.sum(estimate == state)/num_trees
+        update_time.append(timing)
 
         observation_acc.append(obs_acc)
         filter_acc.append(f_acc)
 
-    print('observation, filter min accuracy: %0.4f, %0.4f' % (np.amin(observation_acc)*100/num_trees,
-                                                              np.amin(filter_acc)*100/num_trees))
-    print('observation, filter median accuracy: %0.4f, %0.4f' % (np.median(observation_acc)*100/num_trees,
-                                                                 np.median(filter_acc)*100/num_trees))
-    print('observation, filter max accuracy: %0.4f, %0.4f' % (np.amax(observation_acc)*100/num_trees,
-                                                              np.amax(filter_acc)*100/num_trees))
-    print()
+    return observation_acc, filter_acc, update_time
+
+
+if __name__ == '__main__':
+    dimension = 3
+    Kmax = 1
+    epsilon = 1e-5
+    total_sims = 20
+
+    results = dict()
+    results['dimension'] = dimension
+    results['Kmax'] = Kmax
+    results['epsilon'] = epsilon
+    results['total_sims'] = total_sims
+
+    sim = LatticeForest(dimension)
+
+    st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+    print('[%s] start' % st)
+
+    t0 = time.clock()
+    for s in range(total_sims):
+        seed = 1000+s
+        np.random.seed(seed)
+        sim.rng = seed
+        sim.reset()
+
+        observation_accuracy, filter_accuracy, time_data = run_simulation(sim, Kmax, epsilon)
+        results[seed] = dict()
+        results[seed]['observation_accuracy'] = observation_accuracy
+        results[seed]['RAVI_accuracy'] = filter_accuracy
+        results[seed]['time_per_update'] = time_data
+
+        if (s+1) % 10 == 0 and (s+1) != total_sims:
+            st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+            print('[%s] finished %d simulations' % (st, s+1))
+
+            filename = '[SAVE] ' + 'ravi_d' + str(dimension) + \
+                       '_Kmax' + str(Kmax) + '_eps' + str(epsilon) + \
+                       '_s' + str(s+1) + '.pkl'
+            output = open(filename, 'wb')
+            pickle.dump(results, output)
+            output.close()
+
+    st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+    print('[%s] finish' % st)
+    t1 = time.clock()
+    print('%0.2fs = %0.2fm = %0.2fh elapsed' % (t1-t0, (t1-t0)/60, (t1-t0)/(60*60)))
+
+    filename = 'ravi_d' + str(dimension) + \
+               '_Kmax' + str(Kmax) + '_eps' + str(epsilon) + \
+               '_s' + str(total_sims) + '.pkl'
+    output = open(filename, 'wb')
+    pickle.dump(results, output)
+    output.close()
