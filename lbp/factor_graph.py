@@ -9,7 +9,7 @@ import numpy as np
 import pdb
 
 class FactorGraph:
-    def __init__(self,  W, H, numVar=0, numFactor=0):
+    def __init__(self, numVar=0, numFactor=0):
         '''
         var list: index/names of variables
 
@@ -30,8 +30,6 @@ class FactorGraph:
         messagesFactorToVar: a dictionary to store the messages from factors to variables,
                             keys are (src, dst), values are the corresponding messages of type Factor
         '''
-        self.W = W
-        self.H = H
         self.var = []
         self.varName = [[] for _ in range(numVar)]
         self.domain = [[0,1] for _ in range(numVar)]
@@ -230,7 +228,3 @@ class FactorGraph:
 
         ###############################################################################  
         return output
-
-
-    def node2index(self, row, col, t):
-        return t*self.W*self.H + row*self.W + col
