@@ -4,13 +4,14 @@
 # date: Jan 25, 2018
 ###############################################################################
 
-from factors import *
+from lbp.factors import *
 import numpy as np
 import pdb
 
+
 class FactorGraph:
     def __init__(self, numVar=0, numFactor=0):
-        '''
+        """
         var list: index/names of variables
 
         domain list: the i-th element represents the domain of the i-th variable; 
@@ -29,7 +30,7 @@ class FactorGraph:
 
         messagesFactorToVar: a dictionary to store the messages from factors to variables,
                             keys are (src, dst), values are the corresponding messages of type Factor
-        '''
+        """
         self.var = []
         self.varName = [[] for _ in range(numVar)]
         self.domain = [[0,1] for _ in range(numVar)]
@@ -80,7 +81,6 @@ class FactorGraph:
                 inMsg.val = np.ones(inMsg.card) / inMsg.card[0]
                 self.messagesFactorToVar[(src, dst)] = inMsg
             return self.messagesFactorToVar[(src, dst)]
-
 
     def runParallelLoopyBP(self, maxIterations):
         '''
@@ -167,11 +167,11 @@ class FactorGraph:
         if maxIterations > 1 and converged:
             # print 'LBP converged after %d iterations' % (it + 1)
             status.append('Converged')
-            status.append(it)
-        elif maxIterations > 1:
+            status.append(it+1)
+        elif maxIterations >= 1:
             # print 'LBP unable to converge after %d iterations' % (it+1)
             status.append('Cutoff')
-            status.append(it)
+            status.append(it+1)
 
         return status
 
