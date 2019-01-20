@@ -216,7 +216,14 @@ if __name__ == '__main__':
     dimension = 3
     Kmax = 1
     epsilon = 1e-5
-    total_sims = 20
+    total_sims = 100
+
+    if len(sys.argv) > 1:
+        dimension = int(sys.argv[1][1:])
+        Kmax = int(sys.argv[2][1:])
+
+    print('[RAVI] dimension = %d, Kmax = %d' % (dimension, Kmax))
+    print('running for %d simulation(s)' % total_sims)
 
     results = dict()
     results['dimension'] = dimension
