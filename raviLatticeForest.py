@@ -224,7 +224,13 @@ if __name__ == '__main__':
     results['epsilon'] = epsilon
     results['total_sims'] = total_sims
 
-    sim = LatticeForest(dimension)
+    alpha = dict()
+    alpha_start = 0.1
+    alpha_end = 0.4
+    for r in range(dimension):
+        for c in range(dimension):
+            alpha[(r, c)] = alpha_start + (c/(dimension-1))*(alpha_end - alpha_start)
+    sim = LatticeForest(dimension, alpha=alpha)
 
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
     print('[%s] start' % st)
