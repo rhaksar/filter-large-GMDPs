@@ -197,7 +197,7 @@ if __name__ == '__main__':
 
     if len(sys.argv) > 1:
         dimension = int(sys.argv[1][1:])
-        Kmax = int(sys.argv[1][1:])
+        Kmax = int(sys.argv[2][1:])
 
     print('[LBP] dimension = %d, Kmax = %d' % (dimension, Kmax))
     print('running for %d simulation(s)' % total_sims)
