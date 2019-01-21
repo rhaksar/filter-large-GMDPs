@@ -187,7 +187,7 @@ def run_simulation(sim_obj, iteration_limit, horizon):
 if __name__ == '__main__':
     Kmax = 1
     H = 3
-    total_sims = 1
+    total_sims = 100
 
     if len(sys.argv) > 1:
         Kmax = int(sys.argv[1][1:])

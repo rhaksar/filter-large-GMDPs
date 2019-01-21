@@ -186,7 +186,7 @@ def run_simulation(sim_object, iteration_limit, epsilon):
     filter_acc = []
     update_time = []
 
-    for _ in range(100):
+    for _ in range(75):
         sim_object.update(control)
         state = sim_object.dense_state()
 
@@ -207,7 +207,7 @@ def run_simulation(sim_object, iteration_limit, epsilon):
 if __name__ == '__main__':
     Kmax = 10
     epsilon = 1e-5
-    total_sims = 1
+    total_sims = 100
 
     if len(sys.argv) > 1:
         Kmax = int(sys.argv[1][1:])
