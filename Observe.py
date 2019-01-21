@@ -20,8 +20,18 @@ def tree_observation_probability(state, observation):
 
 
 def get_ebola_observation(sim):
-    pass
+    observation = {}
+    for name in sim.group.keys():
+        probs = [region_observation_probability(s, sim.group[name].state) for s in sim.group[name].state_space]
+        observation[name] = np.random.choice(sim.group[name].state_space, p=probs)
+
+    return observation
 
 
 def region_observation_probability(state, observation):
-    pass
+    measure_correct = 0.85
+    measure_wrong = 0.5*(1-measure_correct)
+    if state != observation:
+        return measure_wrong
+    elif state == observation:
+        return measure_correct
