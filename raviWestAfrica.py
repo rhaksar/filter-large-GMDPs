@@ -57,8 +57,6 @@ class RAVI(object):
 
         # initialize posterior as prior
         posterior = copy.copy(self.prior)
-        # posterior = 0.33*np.ones_like(self.prior)
-        # posterior = posterior / posterior.sum(axis=2, keepdims=True)
 
         # initialize of message for each element
         for key in simulation.group.keys():
@@ -170,62 +168,80 @@ class RAVI(object):
 
 
 def run_simulation(sim_object, iteration_limit, epsilon):
+    """
+    Function to run a single epidemic simulation and return accuracy metrics.
+    """
     num_regions = np.prod(sim_object.dims)
-    control = defaultdict(lambda: (0, 0))
+    control = defaultdict(lambda: (0, 0))  # no control
 
-    # initial belief
+    # initial belief - exact state
     belief = {}
     state = sim_object.dense_state()
     for key in state.keys():
         belief[key] = [0, 0, 0]
         belief[key][state[key]] = 1
 
+    # instantiate filter
     robot = RAVI(belief, iteration_limit=iteration_limit, epsilon=epsilon)
 
     observation_acc = []
     filter_acc = []
     update_time = []
 
+    # run for only 75 iterations as process does not self-terminate
     for _ in range(75):
+        # update simulation and create dense state
         sim_object.update(control)
         state = sim_object.dense_state()
 
+        # get observation and calculate observation accuracy
         obs = get_ebola_observation(sim_object)
         obs_acc = [obs[name] == state[name] for name in state.keys()].count(True)/num_regions
 
+        # run filter and get belief
         belief, status, timing = robot.filter(sim_object, obs)
         estimate = {name: np.argmax(belief[name]) for name in state.keys()}
         f_acc = [estimate[name] == state[name] for name in state.keys()].count(True)/num_regions
         update_time.append(timing)
 
+        # store accuracy for this time step
         observation_acc.append(obs_acc)
         filter_acc.append(f_acc)
 
     return observation_acc, filter_acc, update_time
 
 
-if __name__ == '__main__':
-    Kmax = 10
-    epsilon = 1e-5
+def benchmark(arguments):
+    """
+    Function to run many simulations and save results to file.
+    The iteration limit, Kmax, can be specified on the command line, using the syntax 'ki' where i is an integer.
+    For example, running 'python3 raviWestAfrica k10' uses an iteration limit of 10.
+    """
+
+    Kmax = 1
+    epsilon = 1e-10
     total_sims = 100
 
+    # if command line arguments are provided, use it
     if len(sys.argv) > 1:
         Kmax = int(sys.argv[1][1:])
 
     print('[RAVI] Kmax = %d' % Kmax)
     print('running for %d simulation(s)' % total_sims)
 
+    # dictionary for storing results for each simulation
     results = dict()
     results['Kmax'] = Kmax
     results['epsilon'] = epsilon
     results['total_sims'] = total_sims
 
+    # load model information from file
     handle = open('simulators/west_africa_graph.pkl', 'rb')
     graph = pickle.load(handle)
     handle.close()
 
+    # initial condition
     outbreak = {('guinea', 'gueckedou'): 1}
-
     sim = WestAfrica(graph, outbreak)
 
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
@@ -233,32 +249,36 @@ if __name__ == '__main__':
 
     t0 = time.clock()
     for s in range(total_sims):
-        seed = 1000+s
+        # set random seed and reset simulation object
+        seed = 1000 + s
         np.random.seed(seed)
         sim.rng = seed
         sim.reset()
 
+        # run simulation to get time history of accuracies
         observation_accuracy, filter_accuracy, time_data = run_simulation(sim, Kmax, epsilon)
         results[seed] = dict()
         results[seed]['observation_accuracy'] = observation_accuracy
         results[seed]['RAVI_accuracy'] = filter_accuracy
         results[seed]['time_per_update'] = time_data
 
-        if (s+1) % 10 == 0 and (s+1) != total_sims:
+        # write results to file every 10 simulations
+        if (s + 1) % 10 == 0 and (s + 1) != total_sims:
             st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-            print('[%s] finished %d simulations' % (st, s+1))
+            print('[%s] finished %d simulations' % (st, s + 1))
 
             filename = '[SAVE] ' + 'ravi_wa' + \
                        '_Kmax' + str(Kmax) + '_eps' + str(epsilon) + \
-                       '_s' + str(s+1) + '.pkl'
+                       '_s' + str(s + 1) + '.pkl'
             output = open(filename, 'wb')
             pickle.dump(results, output)
             output.close()
 
+    # write all results to file
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
     print('[%s] finish' % st)
     t1 = time.clock()
-    print('%0.2fs = %0.2fm = %0.2fh elapsed' % (t1-t0, (t1-t0)/60, (t1-t0)/(60*60)))
+    print('%0.2fs = %0.2fm = %0.2fh elapsed' % (t1 - t0, (t1 - t0) / 60, (t1 - t0) / (60 * 60)))
 
     filename = 'ravi_wa' + \
                '_Kmax' + str(Kmax) + '_eps' + str(epsilon) + \
@@ -266,3 +286,28 @@ if __name__ == '__main__':
     output = open(filename, 'wb')
     pickle.dump(results, output)
     output.close()
+
+
+if __name__ == '__main__':
+    # the following code will run one simulation with RAVI and print some statistics
+    Kmax = 1
+    epsilon = 1e-10
+
+    print('[RAVI] Kmax = %d' % Kmax)
+
+    # load model information
+    handle = open('simulators/west_africa_graph.pkl', 'rb')
+    graph = pickle.load(handle)
+    handle.close()
+
+    # set initial condition
+    outbreak = {('guinea', 'gueckedou'): 1}
+    sim = WestAfrica(graph, outbreak)
+
+    observation_accuracy, filter_accuracy, time_data = run_simulation(sim, Kmax, epsilon)
+    print('median observation accuracy: %0.2f' % (np.median(observation_accuracy)*100))
+    print('median filter accuracy: %0.2f' % (np.median(filter_accuracy)*100))
+    print('average update time: %0.4fs' % (np.mean(time_data)))
+
+    # the following function will run the filter for many simulations and write the results to file
+    # benchmark(sys.argv)

@@ -1,9 +1,3 @@
-###############################################################################
-# factor graph data structure implementation 
-# author: Ya Le, Billy Jun, Xiaocheng Li
-# date: Jan 25, 2018
-###############################################################################
-
 from lbp.factors import *
 import numpy as np
 import pdb
@@ -85,14 +79,7 @@ class FactorGraph:
     def runParallelLoopyBP(self, maxIterations):
         '''
         param - iterations: the number of iterations you do loopy BP
-          
-        In this method, you need to implement the loopy BP algorithm. The only values 
-        you should update in this function are self.messagesVarToFactor and self.messagesFactorToVar. 
-        
-        Warning: Don't forget to normalize the message at each time. You may find the normalize
-        method in Factor useful.
         '''      
-        ###############################################################################
         numVariables = len(self.var)
         xhatPrev = np.zeros(numVariables)
         xhat = np.zeros(numVariables)
@@ -185,46 +172,26 @@ class FactorGraph:
         param - var: a single variable index
         return: numpy array of size 2 containing the marginal probabilities 
                 that the variable takes the values 0 and 1
-        
-        example: 
-        >>> factor_graph.estimateMarginalProbability(0)
-        >>> [0.2, 0.8]
-    
-        Since in this assignment, we only care about the marginal 
-        probability of a single variable, you only need to implement the marginal 
-        query of a single variable.     
+
         '''
-        ###############################################################################
-        # To do: your code here  
-        # get neighbours of var
-        # self.varToFactor
         neighbour_messages = [self.getInMessage(f, var, type="factorToVar") for f in self.varToFactor[var]]
         p = Factor()
         for nm in neighbour_messages:
             p = p.multiply(nm)
         p = p.normalize()
         return p.val
- 
-        ###############################################################################
-    
+
 
     def getMarginalMAP(self):
         '''
         In this method, the return value output should be the marginal MAP 
         assignments for the variables. You may utilize the method
         estimateMarginalProbability.
-        
-        example: (N=2, 2*N=4)
-        >>> factor_graph.getMarginalMAP()
-        >>> [0, 1, 0, 0]
         '''
         
         output = np.zeros(len(self.var))
-        ###############################################################################
-        # To do: your code here  
         for (i,v) in enumerate(self.var):
             p = self.estimateMarginalProbability(v)
             output[i] = 1*(p[0] < p[1])
 
-        ###############################################################################  
         return output

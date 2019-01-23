@@ -1,12 +1,3 @@
-###############################################################################
-# utility functions for manipulating factors; ported from Daphne Koller's 
-# Matlab utility code
-# author: Ya Le, Billy Jun, Xiaocheng Li
-# date: Jan 25, 2018
-# You don't need to modify this file for PA3
-###############################################################################
-
-
 import numpy as np
 import pdb
 
@@ -92,7 +83,7 @@ class Factor:
         # self.card: the cardinality of each variable in self.scope
         self.card = card
 
-        # use the name field for debugging, imo
+        # use the name field for debugging
         self.name = name
 
         self.val = val
@@ -115,18 +106,6 @@ class Factor:
         :param str opname: a string naming the operation.  Optional but nice for visualization.
 
         :rtype: Factor
-
-        --------------------------------------------------------------------------------
-        You may find the following functions useful for this implementation: 
-            -intersection_indices
-            -assignment_to_indices
-            -indices_to_assignment 
-
-        Depending on your implementation, the numpy function np.reshape and the numpy.ndarray 
-        field arr.flat may be useful for this as well, when dealing with the duality between 
-        the two representations of the values of a factor.  (Again, these two representations
-        are multidimensional array versus vector, and are navigated via the functions 
-        assignment_to_indices and indices_to_assignment)
         """         
 
         g = Factor() # modify this to be the composition of two Factors and then return it
@@ -169,9 +148,6 @@ class Factor:
         """
         Returns a factor that is the result of multiplying this factor with factor f.
 
-        Looking at Factor.sum() might be helpful to implement this function.  This is
-        very simple, but I want to make sure you know how to use lambda functions.
-
         :param Factor f: the factor by which to multiply this factor.
         :rtype: Factor
         """      
@@ -180,9 +156,6 @@ class Factor:
     def divide(self, f):
         """
         Returns a factor that is the result of dividing this factor with factor f.
-
-        Looking at Factor.sum() might be helpful to implement this function.  This is
-        very simple, but I want to make sure you know how to use lambda functions.
 
         :param Factor f: the factor by which to divide this factor.
         :rtype: Factor
@@ -232,7 +205,7 @@ class Factor:
 
         This will involve zeroing out certain rows/columns, and may involve reordering axes.
         """
-        f = Factor(self) #make copy.  You'll modify this.
+        f = Factor(self)
         f.name = "(%s with variable %s observed as %s)"%(self.name, var, val)    
         if var not in self.scope:
             return Factor(self)
@@ -261,7 +234,7 @@ class Factor:
        
     def __repr__(self):
         """
-        returns a descriptive string representing this factor!
+        returns a descriptive string representing this factor
         """
         r = "Factor object with scope %s and corresponding cardinalities %s"%(self.scope, self.card)
         r += "\nCPD:\n" + str(self.val)
@@ -271,8 +244,7 @@ class Factor:
 
     def __str__(self):
         """
-        returns a nice string representing this factor!  Note that we can now use string formatting
-        with %s and this will cast our class into somethign nice and readable.
+        returns a nice string representing this factor
         """
         return self.name   
 

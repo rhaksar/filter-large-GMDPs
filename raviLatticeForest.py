@@ -60,7 +60,7 @@ class RAVI(object):
         # posterior = posterior / posterior.sum(axis=2, keepdims=True)
 
         # initialize of message for each element
-        for element in simulation.forest.values():
+        for element in simulation.group.values():
             key = tuple(element.position)
             graph[key] = dict()
             graph[key]['message'] = self.prior[element.position[0], element.position[1], :]
@@ -69,7 +69,7 @@ class RAVI(object):
         status = ['Cutoff', self.iteration_limit]
         for iteration in range(self.iteration_limit):
             num_changed = 0
-            for element in simulation.forest.values():
+            for element in simulation.group.values():
                 key = tuple(element.position)
                 num_neighbors = len(element.neighbors)
 
@@ -82,7 +82,7 @@ class RAVI(object):
 
                     values = []
                     for n in range(num_neighbors):
-                        neighbor_position = tuple(simulation.forest[element.neighbors[n]].position)
+                        neighbor_position = tuple(simulation.group[element.neighbors[n]].position)
                         prob = None
                         if int(xj[n]) == 0:
                             prob = graph[neighbor_position]['message'][self.healthy] + \
@@ -164,7 +164,7 @@ class RAVI(object):
                 break
 
             # update messages for next round
-            for element in simulation.forest.values():
+            for element in simulation.group.values():
                 key = tuple(element.position)
                 graph[key]['message'] = graph[key]['next_message']
 
@@ -174,10 +174,13 @@ class RAVI(object):
 
 
 def run_simulation(sim_object, iteration_limit, epsilon):
+    """
+    Function to run a single forest fire simulation and return accuracy metrics.
+    """
     num_trees = np.prod(sim_object.dims)
     control = defaultdict(lambda: (0, 0))
 
-    # initial belief
+    # initial belief - exact state
     belief = np.zeros((sim_object.dims[0], sim_object.dims[1], 3))
     state = sim_object.dense_state()
     p = np.where(state == 0)
@@ -188,36 +191,48 @@ def run_simulation(sim_object, iteration_limit, epsilon):
     belief[p[0], p[1], :] = [0, 0, 1]
     belief = belief / belief.sum(axis=2, keepdims=True)
 
+    # instantiate filter
     robot = RAVI(belief, iteration_limit=iteration_limit, epsilon=epsilon)
 
     observation_acc = []
     filter_acc = []
     update_time = []
 
+    # run until forest fire termminates
     while not sim_object.end:
+        # update simulator and get state
         sim_object.update(control)
         state = sim_object.dense_state()
 
+        # get observation and observation accuracy
         obs = get_forest_observation(sim_object)
         obs_acc = np.sum(obs == state)/num_trees
 
+        # run filter and get belief
         belief, status, timing = robot.filter(sim_object, obs)
         estimate = np.argmax(belief, axis=2)
         f_acc = np.sum(estimate == state)/num_trees
         update_time.append(timing)
 
+        # store results at current time step
         observation_acc.append(obs_acc)
         filter_acc.append(f_acc)
 
     return observation_acc, filter_acc, update_time
 
 
-if __name__ == '__main__':
+def benchmark(arguments):
+    """
+    Function to run many simulations and save results to file.
+    The forest size, dimension, and iteration limit, Kmax, can be specified on the command line.
+    For example, running 'python3 raviLatticeForest d3 k10' uses dimension = 3 and Kmax = 10
+    """
     dimension = 3
     Kmax = 1
     epsilon = 1e-5
     total_sims = 100
 
+    # use command line arguments if provided
     if len(sys.argv) > 1:
         dimension = int(sys.argv[1][1:])
         Kmax = int(sys.argv[2][1:])
@@ -225,18 +240,21 @@ if __name__ == '__main__':
     print('[RAVI] dimension = %d, Kmax = %d' % (dimension, Kmax))
     print('running for %d simulation(s)' % total_sims)
 
+    # dictionary for storing results for each simulation
     results = dict()
     results['dimension'] = dimension
     results['Kmax'] = Kmax
     results['epsilon'] = epsilon
     results['total_sims'] = total_sims
 
+    # create a non-uniform grid of fire propagation parameters to model wind effects
     alpha = dict()
     alpha_start = 0.1
     alpha_end = 0.4
     for r in range(dimension):
         for c in range(dimension):
-            alpha[(r, c)] = alpha_start + (c/(dimension-1))*(alpha_end - alpha_start)
+            alpha[(r, c)] = alpha_start + (c / (dimension - 1)) * (alpha_end - alpha_start)
+
     sim = LatticeForest(dimension, alpha=alpha)
 
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
@@ -244,24 +262,27 @@ if __name__ == '__main__':
 
     t0 = time.clock()
     for s in range(total_sims):
-        seed = 1000+s
+        # set random seed and reset simulation
+        seed = 1000 + s
         np.random.seed(seed)
         sim.rng = seed
         sim.reset()
 
+        # run filter and get results
         observation_accuracy, filter_accuracy, time_data = run_simulation(sim, Kmax, epsilon)
         results[seed] = dict()
         results[seed]['observation_accuracy'] = observation_accuracy
         results[seed]['RAVI_accuracy'] = filter_accuracy
         results[seed]['time_per_update'] = time_data
 
-        if (s+1) % 10 == 0 and (s+1) != total_sims:
+        # periodically write to file
+        if (s + 1) % 10 == 0 and (s + 1) != total_sims:
             st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-            print('[%s] finished %d simulations' % (st, s+1))
+            print('[%s] finished %d simulations' % (st, s + 1))
 
             filename = '[SAVE] ' + 'ravi_d' + str(dimension) + \
                        '_Kmax' + str(Kmax) + '_eps' + str(epsilon) + \
-                       '_s' + str(s+1) + '.pkl'
+                       '_s' + str(s + 1) + '.pkl'
             output = open(filename, 'wb')
             pickle.dump(results, output)
             output.close()
@@ -269,11 +290,38 @@ if __name__ == '__main__':
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
     print('[%s] finish' % st)
     t1 = time.clock()
-    print('%0.2fs = %0.2fm = %0.2fh elapsed' % (t1-t0, (t1-t0)/60, (t1-t0)/(60*60)))
+    print('%0.2fs = %0.2fm = %0.2fh elapsed' % (t1 - t0, (t1 - t0) / 60, (t1 - t0) / (60 * 60)))
 
+    # write full results to file
     filename = 'ravi_d' + str(dimension) + \
                '_Kmax' + str(Kmax) + '_eps' + str(epsilon) + \
                '_s' + str(total_sims) + '.pkl'
     output = open(filename, 'wb')
     pickle.dump(results, output)
     output.close()
+
+
+if __name__ == '__main__':
+    # the following code will run one simulation and print some statistics
+    dimension = 3
+    Kmax = 1
+    epsilon = 1e-5
+
+    print('[RAVI] dimension = %d, Kmax = %d' % (dimension, Kmax))
+
+    # create non-uniform grid of fire propagation parameters to model wind effects
+    alpha = dict()
+    alpha_start = 0.1
+    alpha_end = 0.4
+    for row in range(dimension):
+        for col in range(dimension):
+            alpha[(row, col)] = alpha_start + (col/(dimension-1))*(alpha_end-alpha_start)
+    sim = LatticeForest(dimension, alpha=alpha)
+
+    observation_accuracy, filter_accuracy, time_data = run_simulation(sim, Kmax, epsilon)
+    print('median observation accuracy: %0.2f' % (np.median(observation_accuracy)*100))
+    print('median filter accuracy: %0.2f' % (np.median(filter_accuracy)*100))
+    print('average update time: %0.4fs' % (np.mean(time_data)))
+
+    # the following function will run many simulations and write the results to file
+    # benchmark(sys.argv)
