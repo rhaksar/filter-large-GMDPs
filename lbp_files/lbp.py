@@ -17,7 +17,7 @@ class LBPFilter:
         self.beta = np.exp(-1./10) # fire persistence parameter
 
         # Initialize graph
-        self.G = FactorGraph(W, H, numVar=0, numFactor=0)
+        self.G = FactorGraph(numVar=0, numFactor=0)
 
         # Some other useful variables
         self.factorIdx = 0

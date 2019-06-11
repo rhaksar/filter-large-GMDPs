@@ -126,7 +126,7 @@ class forest:
 
         # if no more fire, return
         if self.end:
-            print 'process has terminated'
+            print('process has terminated')
             return
 
         for row in range(self.H):

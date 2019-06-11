@@ -214,19 +214,19 @@ def plot(forest):
 
 if __name__ == '__main__':
     # Simulation parameters
-    W = 2  # width
-    H = 2  # height
-    T = None  # number of time steps, T=None runs simulation until no more fire
+    W = 5  # width
+    H = 5  # height
+    T = 10  # number of time steps, T=None runs simulation until no more fire
 
     # Initialize forest
     f = ff.forest(W, H)
 
     # Filter parameters
-    maxIterations = 1
+    maxIterations = 10
     horizon = 3
 
     # Run simulation
-    N = 20  # number of simulations to run
+    N = 1  # number of simulations to run
     errors = {}
     errors['width'] = W
     errors['height'] = H
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     errors['horizon'] = horizon
 
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-    print '[%s] start' % st
+    # print '[%s] start' % st
 
     t0 = time.clock()
     for i in range(N):
@@ -247,28 +247,28 @@ if __name__ == '__main__':
 
         if (i+1) % 10 == 0:
             st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-            print '[%s] finished %d simulations' %(st, i+1)
+            # print '[%s] finished %d simulations' %(st, i+1)
 
             filename = '[SAVE] ' + 'lbp_wh' + str(W*H) + \
                        '_i' + str(maxIterations) + \
                        '_h' + str(horizon) + '_s' + str(i+1) + '.pkl'
-            output = open(filename, 'wb')
-            pickle.dump(errors, output)
-            output.close()
+            # output = open(filename, 'wb')
+            # pickle.dump(errors, output)
+            # output.close()
 
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-    print '[%s] finish' % st
+    # print '[%s] finish' % st
 
     t1 = time.clock()
-    print '%0.2fs = %0.2fm elapsed' % (t1-t0,(t1-t0)/60)
+    # print '%0.2fs = %0.2fm elapsed' % (t1-t0,(t1-t0)/60)
 
     # Save data as pickle file
-    filename = 'lbp_wh' + str(W*H) \
-               + '_i' + str(maxIterations) \
-               + '_h' + str(horizon) + '_s' + str(N) + '.pkl'
-    output = open(filename, 'wb')
-    pickle.dump(errors, output)
-    output.close()
+    # filename = 'lbp_wh' + str(W*H) \
+    #            + '_i' + str(maxIterations) \
+    #            + '_h' + str(horizon) + '_s' + str(N) + '.pkl'
+    # output = open(filename, 'wb')
+    # pickle.dump(errors, output)
+    # output.close()
 
     # for s in errors.keys():
     #     measurementE_pct = [(100*e)/(W*H) for e in errors[s]['measurementE']]
