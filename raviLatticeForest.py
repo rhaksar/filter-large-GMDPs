@@ -12,7 +12,7 @@ from Observe import get_forest_observation, tree_observation_probability
 from ravi import RAVI, multiply_probabilities
 
 
-def candidate_message_forest(tree, filter_graph, observation):
+def candidate_message_forest(tree, filter_graph, observation, control):
     """
     Function to build a candidate message for a Tree in the LatticeForest simulator.
     """
@@ -45,7 +45,7 @@ def candidate_message_forest(tree, filter_graph, observation):
     for s_t in tree.state_space:
         for s_tm1 in tree.state_space:
             for active in range(num_neighbors+1):
-                values = [tree.dynamics((s_tm1, active, s_t)), caf[active]]
+                values = [tree.dynamics((s_tm1, active, s_t), control[tuple(tree.position)]), caf[active]]
                 candidate[s_tm1, s_t] += multiply_probabilities(values)
 
             values = [tree_observation_probability(s_t, observation[tree.position[0], tree.position[1]]),
@@ -91,7 +91,7 @@ def run_simulation(sim_object, iteration_limit, epsilon):
 
         # run filter and get belief
         def build_candidate(element, graph):
-            return candidate_message_forest(element, graph, obs)
+            return candidate_message_forest(element, graph, obs, defaultdict(lambda x: (0, 0)))
         belief, status, timing = robot.filter(sim_object, build_candidate)
         estimate = np.argmax(belief, axis=2)
         f_acc = np.sum(estimate == state)/num_trees
