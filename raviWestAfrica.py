@@ -108,7 +108,7 @@ def benchmark(arguments):
 
     # if command line arguments are provided, use it
     if len(arguments) > 1:
-        Kmax = int(sys.argv[1][1:])
+        Kmax = int(arguments[1][1:])
 
     print('[RAVI] Kmax = %d' % Kmax)
     print('running for %d simulation(s)' % total_sims)

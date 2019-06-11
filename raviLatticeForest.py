@@ -117,8 +117,8 @@ def benchmark(arguments):
 
     # use command line arguments if provided
     if len(arguments) > 1:
-        dimension = int(sys.argv[1][1:])
-        Kmax = int(sys.argv[2][1:])
+        dimension = int(arguments[1][1:])
+        Kmax = int(arguments[2][1:])
 
     print('[RAVI] dimension = %d, Kmax = %d' % (dimension, Kmax))
     print('[RAVI] epsilon = %e' % epsilon)
