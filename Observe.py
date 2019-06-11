@@ -42,7 +42,7 @@ def get_ebola_observation(sim):
 
 def region_observation_probability(state, observation):
     """
-    Measurement model for a single REgion element for the WestAfrica simulator.
+    Measurement model for a single Region element for the WestAfrica simulator.
     Returns a probability of the combination (state, observation).
     """
     measure_correct = 0.85
