@@ -1,14 +1,19 @@
-# estimate-large-GMDPs
+# filter-large-GHMMs
 
-A repository for methods to perform state estimation for graph-based MDPs. All methods are applied to a stochastic grid-based forest fire process. 
+A repository of methods for filtering graph-based MDPs.  
 
-## Files and directories:
-- `lbp`: Loopy Belief Propagation
-- `FireSimulator.py`: Simulates a stochastic grid-based forest fire process
-- `FireSimulatorUtilities.py`
-- `energy minimization.ipynb`: Deterministic free-energy minimization method
-- `exact filter.ipynb`: Exact Bayes filter 
-- `message passing.ipynb`: Message-passing algorithm based on the variational inference framework 
-- `node bayes filter.ipynb`: Experimental method using a Bayes filter for each graph vertex
-- `scratch variational inference.ipynb`: Code to investigate using variational inference
-- `visualize data.ipynb`: Load and display data files
+## Requirements:
+- Developed with Python 3.5
+- Requires `numpy` (version 1.16.0+)
+- Requires the [simulators](https://github.com/rhaksar/simulators) repository: clone the repository into the root level of this repository 
+
+## Files:
+- `factor_graph.py`: Helper code to build factor graphs.
+- `factors.py`: Factor definition and operations for factor graphs.
+- `lbp.py`: General implementation of Loopy Belief Propagation (LBP) for filtering.
+- `lbpLatticeForest.py`: Application of LBP to the LatticeForest simulator.
+- `lbpWestAfrica.py`: Application of LBP to the WestAfrica simulator. 
+- `Observe.py`: Defines measurement models for filters. 
+- `ravi.py`: General implementation of Relaxed Anonymous Variational Inference (RAVI) for filtering. 
+- `raviLatticeForest.py`: Application of RAVI to the LatticeForest simulator.
+- `raviWestAfrica.py`: Application of RAVI to the WestAfrica simulator. 
