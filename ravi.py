@@ -85,6 +85,11 @@ class RAVI(object):
 
                     q[s_t] = approximation(q[s_t], self.epsilon)
 
+                # regularization
+                # coeff = 0.6
+                # q_mean = np.mean(q)
+                # q = [v - coeff*np.sign(v-q_mean)*np.abs(v-q_mean) for v in q]
+
                 # normalize posterior factor
                 q = [v-max(q) for v in q]
                 normalization = 0
@@ -97,6 +102,11 @@ class RAVI(object):
                     normalization += q[idx]
 
                 q /= normalization
+
+                # regularization
+                # q += 0.1*np.random.rand(3)
+                # q /= np.sum(q)
+
                 # check if the max likelihood estimate changed
                 if np.argmax(q) != np.argmax(posterior[key]):
                     num_changed += 1
@@ -114,15 +124,17 @@ class RAVI(object):
 
                 # normalize next message
                 d = filter_graph[key]['next_message']
-                d = [v-max(d) for v in d]
-                normalization = 0
-                for idx, v in enumerate(d):
-                    if v <= -100:
-                        d[idx] = 0
-                        continue
-
-                    d[idx] = np.exp(v)
-                    normalization += d[idx]
+                # d = [np.log(v) for v in d]
+                # d = [v-max(d) for v in d]
+                # normalization = 0
+                # for idx, v in enumerate(d):
+                #     if v <= -100:
+                #         d[idx] = 0
+                #         continue
+                #
+                #     d[idx] = np.exp(v)
+                #     normalization += d[idx]
+                normalization = np.sum(d)
                 d /= normalization
                 filter_graph[key]['next_message'] = d
 
