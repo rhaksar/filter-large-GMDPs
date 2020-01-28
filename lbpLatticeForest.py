@@ -7,7 +7,7 @@ import pickle
 import sys
 import time
 
-sys.path.append(os.getcwd() + '/simulators')
+sys.path.append(os.path.dirname(os.getcwd()) + '/simulators')
 from lbp import LBP
 from fires.LatticeForest import LatticeForest
 from Observe import get_forest_observation, tree_observation_probability

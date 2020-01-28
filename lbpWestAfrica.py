@@ -5,7 +5,7 @@ import pickle
 import sys
 import time
 
-sys.path.append(os.getcwd() + '/simulators')
+sys.path.append(os.path.dirname(os.getcwd()) + '/simulators')
 from lbp import LBP
 from epidemics.WestAfrica import WestAfrica
 from Observe import get_ebola_observation, region_observation_probability
@@ -150,7 +150,7 @@ if __name__ == '__main__':
     print('[LBP] Kmax = %d' % Kmax)
 
     # load model information
-    handle = open('simulators/west_africa_graph.pkl', 'rb')
+    handle = open(os.path.dirname(os.getcwd()) + '/simulators/west_africa_graph.pkl', 'rb')
     graph = pickle.load(handle)
     handle.close()
 

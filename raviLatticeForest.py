@@ -6,7 +6,7 @@ import pickle
 import sys
 import time
 
-sys.path.append(os.getcwd() + '/simulators')
+sys.path.append(os.path.dirname(os.getcwd()) + '/simulators')
 from fires.LatticeForest import LatticeForest
 from Observe import get_forest_observation, tree_observation_probability
 from ravi import RAVI, multiply_probabilities
@@ -91,7 +91,7 @@ def run_simulation(sim_object, iteration_limit, epsilon):
 
         # run filter and get belief
         def build_candidate(element, graph):
-            return candidate_message_forest(element, graph, obs, defaultdict(lambda x: (0, 0)))
+            return candidate_message_forest(element, graph, obs, defaultdict(lambda: (0, 0)))
         belief, status, timing = robot.filter(sim_object, build_candidate)
         estimate = np.argmax(belief, axis=2)
         f_acc = np.sum(estimate == state)/num_trees
@@ -113,7 +113,7 @@ def benchmark(arguments):
     dimension = 3
     Kmax = 1
     epsilon = 1e-10
-    total_sims = 2
+    total_sims = 100
 
     # use command line arguments if provided
     if len(arguments) > 1:
@@ -187,7 +187,9 @@ def benchmark(arguments):
 
 if __name__ == '__main__':
     # the following code will run one simulation and print some statistics
-    # dimension = 10
+    # seed = 1023  # 1064
+    # np.random.seed(seed)
+    # dimension = 25
     # Kmax = 1
     # epsilon = 1e-10
     #
@@ -201,10 +203,14 @@ if __name__ == '__main__':
     #     for col in range(dimension):
     #         alpha[(row, col)] = alpha_start + (col/(dimension-1))*(alpha_end-alpha_start)
     # sim = LatticeForest(dimension, alpha=alpha)
+    # sim.rng = seed
+    # sim.reset()
     #
     # observation_accuracy, filter_accuracy, time_data = run_simulation(sim, Kmax, epsilon)
     # print('median observation accuracy: %0.2f' % (np.median(observation_accuracy)*100))
     # print('median filter accuracy: %0.2f' % (np.median(filter_accuracy)*100))
+    # print('{0:0.2f}, {1:0.2f}, {2:0.2f}, {3:0.2f}'.format(np.amin(filter_accuracy), np.median(filter_accuracy),
+    #                                                       np.mean(filter_accuracy), np.amax(filter_accuracy)))
     # print('average update time: %0.4fs' % (np.mean(time_data)))
 
     # the following function will run many simulations and write the results to file

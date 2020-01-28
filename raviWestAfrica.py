@@ -6,7 +6,7 @@ import pickle
 import sys
 import time
 
-sys.path.append(os.getcwd() + '/simulators')
+sys.path.append(os.path.dirname(os.getcwd()) + '/simulators')
 from epidemics.WestAfrica import WestAfrica
 from Observe import get_ebola_observation, region_observation_probability
 from ravi import RAVI, multiply_probabilities
@@ -120,7 +120,7 @@ def benchmark(arguments):
     results['total_sims'] = total_sims
 
     # load model information from file
-    handle = open('simulators/west_africa_graph.pkl', 'rb')
+    handle = open(os.path.dirname(os.getcwd()) + '/simulators/west_africa_graph.pkl', 'rb')
     graph = pickle.load(handle)
     handle.close()
 
