@@ -38,8 +38,8 @@ class LBP:
         Adds a new time layer to the graph corresponding to the new measurement y. If prior is given and
         self.time = 0 then the layer also includes factors corresponding to the priors.
 
-        First, this function builds the nodes for each new Region element at the current time. Then, it adds factors for
-        measurements. If self.time > 0 then factors are added for the dynamics.
+        First, this function builds the nodes for each new simulation element at the current time.
+        Then, it adds factors for measurements. If self.time > 0 then factors are added for the dynamics.
         """
         # number of factors and variables
         num_nodes = np.prod(simulation.dims)
@@ -55,7 +55,7 @@ class LBP:
         self.G.varToFactor += [[] for _ in range(num_nodes)]
         self.G.factorToVar += [[] for _ in range(factor_count)]
 
-        # add variables and factors for each Region element
+        # add variables and factors for each element
         for key, element in simulation.group.items():
             # create variable name and index
             var_idx = node2index(simulation.dims, element.numeric_id, self.time)
