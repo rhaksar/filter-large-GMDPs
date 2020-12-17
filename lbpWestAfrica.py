@@ -2,13 +2,11 @@ from datetime import datetime
 import numpy as np
 import os
 import pickle
-import sys
 import time
 
-sys.path.append(os.path.dirname(os.getcwd()) + '/simulators')
-from lbp import LBP
-from epidemics.WestAfrica import WestAfrica
-from Observe import get_ebola_observation, region_observation_probability
+from simulators.epidemics.WestAfrica import WestAfrica
+from filters.lbp import LBP
+from filters.observe import get_ebola_observation, region_observation_probability
 
 
 def obs_model(region, state_value, obs_value):

@@ -6,10 +6,9 @@ import pickle
 import sys
 import time
 
-sys.path.append(os.path.dirname(os.getcwd()) + '/simulators')
-from epidemics.WestAfrica import WestAfrica
-from Observe import get_ebola_observation, region_observation_probability
-from ravi import RAVI, multiply_probabilities
+from simulators.epidemics.WestAfrica import WestAfrica
+from filters.observe import get_ebola_observation, region_observation_probability
+from filters.ravi import RAVI, multiply_probabilities
 
 
 def candidate_message_westafrica(region, filter_graph, observation):

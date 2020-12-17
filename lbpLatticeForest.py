@@ -2,15 +2,12 @@ from collections import defaultdict
 from datetime import datetime
 import itertools
 import numpy as np
-import os
 import pickle
-import sys
 import time
 
-sys.path.append(os.path.dirname(os.getcwd()) + '/simulators')
-from lbp import LBP
-from fires.LatticeForest import LatticeForest
-from Observe import get_forest_observation, tree_observation_probability
+from simulators.fires.LatticeForest import LatticeForest
+from filters.lbp import LBP
+from filters.observe import get_forest_observation, tree_observation_probability
 
 
 # # function to map a node in the graphical model to a numeric index

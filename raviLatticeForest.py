@@ -1,15 +1,13 @@
 from collections import defaultdict
 from datetime import datetime
 import numpy as np
-import os
 import pickle
 import sys
 import time
 
-sys.path.append(os.path.dirname(os.getcwd()) + '/simulators')
-from fires.LatticeForest import LatticeForest
-from Observe import get_forest_observation, tree_observation_probability
-from ravi import RAVI, multiply_probabilities
+from simulators.fires.LatticeForest import LatticeForest
+from filters.observe import get_forest_observation, tree_observation_probability
+from filters.ravi import RAVI, multiply_probabilities
 
 
 def candidate_message_forest(tree, filter_graph, observation, control):
