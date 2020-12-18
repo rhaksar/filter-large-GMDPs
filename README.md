@@ -22,8 +22,10 @@ Paper citation:
   anonymous variational inference (RAVI). 
 
 ## Files:
+- `AnalyzeData.py`: Script to print statistics for a batch of filter simulations.
 - `lbpLatticeForest.py`: LBP for the LatticeForest simulator.
 - `lbpWestAfrica.py`: LBP for the WestAfrica simulator. 
 - `raviLatticeForest.py`: RAVI for the LatticeForest simulator.
 - `raviWestAfrica.py`: RAVI for the WestAfrica simulator. 
 - `rbfLatticeForest.py`: Recursive Bayesian Filter for the LatticeForest simulator.
+- `VisualizeData.py`: Script to generate visualizations of results.
