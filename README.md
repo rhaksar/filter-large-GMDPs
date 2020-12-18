@@ -18,8 +18,8 @@ Paper citation:
 - Requires the [simulators](https://github.com/rhaksar/simulators) repository
 
 ## Directories:
-- `filters`: Directory with common functions and implementations of loopy belief propagation (LBP) and relaxed
-  anonymous variational inference (RAVI). 
+- `filters`: Directory with common functions and implementations of Loopy Belief Propagation (LBP) and Relaxed
+  Anonymous Variational Inference (RAVI). 
 
 ## Files:
 - `lbpLatticeForest.py`: LBP for the LatticeForest simulator.
