@@ -1,6 +1,4 @@
-from collections import defaultdict
 from datetime import datetime
-import itertools
 import numpy as np
 import pickle
 import time
@@ -10,6 +8,7 @@ from filters.lbp import LBP
 from filters.observe import get_forest_observation, tree_observation_probability
 
 
+# functions to connect LBP interface to observation and transition models for Trees
 def obs_model(tree, state_value, obs_value):
     return tree_observation_probability(state_value, obs_value)
 
@@ -87,8 +86,8 @@ def benchmark(arguments):
         dimension = int(arguments[1][1:])
         Kmax = int(arguments[2][1:])
 
-    print('[LBP] dimension = %d, Kmax = %d' % (dimension, Kmax))
-    print('running for %d simulation(s)' % total_sims)
+    print('[LBP] dimension = {0:d}, Kmax = {1:d}'.format(dimension, Kmax))
+    print('running for {0:d} simulation(s)'.format(total_sims))
 
     # dictionary for results for each simulation
     results = dict()
@@ -107,7 +106,7 @@ def benchmark(arguments):
     sim = LatticeForest(dimension, alpha=alpha)
 
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-    print('[%s] start' % st)
+    print('[{0}] start'.format(st))
 
     t0 = time.clock()
     for s in range(total_sims):
@@ -127,7 +126,7 @@ def benchmark(arguments):
         # periodically write to file
         if (s + 1) % 10 == 0 and (s + 1) != total_sims:
             st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-            print('[%s] finished %d simulations' % (st, s + 1))
+            print('[{0}] finished {1:d} simulations'.format(st, s+1))
 
             filename = '[SAVE] ' + 'lbp_d' + str(dimension) + \
                        '_Kmax' + str(Kmax) + '_h' + str(H) + \
@@ -137,9 +136,9 @@ def benchmark(arguments):
             output.close()
 
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-    print('[%s] finish' % st)
+    print('[{0}] finish'.format(st))
     t1 = time.clock()
-    print('%0.2fs = %0.2fm = %0.2fh elapsed' % (t1 - t0, (t1 - t0) / 60, (t1 - t0) / (60 * 60)))
+    print('{0:0.2f}s = {1:0.2f}m = {2:0.2f}h elapsed'.format(t1-t0, (t1-t0)/60, (t1-t0)/(60*60)))
 
     # save final results to file
     filename = 'lbp_d' + str(dimension) + \
@@ -156,7 +155,7 @@ if __name__ == '__main__':
     Kmax = 1
     H = 3
 
-    print('[LBP] dimension = %d, Kmax = %d' % (dimension, Kmax))
+    print('[LBP] dimension = {0:d}, Kmax = {1:d}'.format(dimension, Kmax))
 
     # create non-uniform grid of fire propagation parameters to model wind effects
     alpha = dict()
@@ -168,9 +167,9 @@ if __name__ == '__main__':
     sim = LatticeForest(dimension, alpha=alpha)
 
     observation_accuracy, filter_accuracy, time_data = run_simulation(sim, Kmax, H)
-    print('median observation accuracy: %0.2f' % (np.median(observation_accuracy)*100))
-    print('median filter accuracy: %0.2f' % (np.median(filter_accuracy)*100))
-    print('average update time: %0.4fs' % (np.mean(time_data)))
+    print('median observation accuracy: {0:0.2f}'.format(np.median(observation_accuracy)*100))
+    print('median filter accuracy: {0:0.2f}'.format(np.median(filter_accuracy)*100))
+    print('average update time: {0:0.4f}s'.format(np.mean(time_data)))
 
     # this function will run many simulations and save results to file
     # benchmark(sys.argv)
