@@ -172,6 +172,7 @@ def run_simulation(sim_object, forest_dimension):
 
         belief = rbf(belief, obs, tree, forest_dimension)
 
+        # compare maximum likelihood state from RBF to ground truth
         max_likelihood_state = max(belief.items(), key=operator.itemgetter(1))[0]
         max_likelihood_state = np.array(list(max_likelihood_state), dtype=int).reshape((forest_dimension,
                                                                                         forest_dimension),
@@ -180,7 +181,6 @@ def run_simulation(sim_object, forest_dimension):
 
         observation_acc.append(obs_acc)
         filter_acc.append(f_acc)
-        print(f_acc)
 
     return observation_acc, filter_acc
 
@@ -190,4 +190,6 @@ if __name__ == '__main__':
     sim = LatticeForest(dimension)
 
     # running the RBF is slow, even for small LatticeForest sizes
-    # run_simulation(sim, dimension)
+    observation, filter = run_simulation(sim, dimension)
+    print('median observation accuracy = {0:0.2f}'.format(np.median(observation)))
+    print('median filter accuracy = {0:0.2f}'.format(np.median(filter)))
