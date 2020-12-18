@@ -1,6 +1,6 @@
 # filter-large-GHMMs
 
-A repository to support the paper, **Scalable Filtering of Large Graph-coupled Hidden Markov Models**.
+A repository to support the paper **Scalable Filtering of Large Graph-coupled Hidden Markov Models**.
 
 Paper citation:
 ```
@@ -22,8 +22,8 @@ Paper citation:
   anonymous variational inference (RAVI). 
 
 ## Files:
-- `exact_filter.py`: Recursive Bayesian Filter for the LatticeForest simulator.
 - `lbpLatticeForest.py`: LBP for the LatticeForest simulator.
 - `lbpWestAfrica.py`: LBP for the WestAfrica simulator. 
 - `raviLatticeForest.py`: RAVI for the LatticeForest simulator.
 - `raviWestAfrica.py`: RAVI for the WestAfrica simulator. 
+- `rbfLatticeForest.py`: Recursive Bayesian Filter for the LatticeForest simulator.
