@@ -1,18 +1,15 @@
 from collections import defaultdict
 from datetime import datetime
 import numpy as np
-import os
 import pickle
-import sys
 import time
 
-sys.path.append(os.path.dirname(os.getcwd()) + '/simulators')
-from fires.LatticeForest import LatticeForest
-from Observe import get_forest_observation, tree_observation_probability
-from ravi import RAVI, multiply_probabilities
+from simulators.fires.LatticeForest import LatticeForest
+from filters.observe import get_forest_observation, tree_observation_probability
+from filters.ravi import RAVI, multiply_probabilities
 
 
-def candidate_message_forest(tree, filter_graph, observation, control):
+def candidate_message_forest(tree, filter_graph, threshold, observation, control):
     """
     Function to build a candidate message for a Tree in the LatticeForest simulator.
     """
@@ -39,18 +36,18 @@ def candidate_message_forest(tree, filter_graph, observation, control):
 
             values.append(prob)
 
-        caf[active] += multiply_probabilities(values)
+        caf[active] += multiply_probabilities(values, threshold)
 
     # construct candidate message, a function of x_{i}^{t-1} and x_{i}^{t}
     for s_t in tree.state_space:
         for s_tm1 in tree.state_space:
             for active in range(num_neighbors+1):
                 values = [tree.dynamics((s_tm1, active, s_t), control[tuple(tree.position)]), caf[active]]
-                candidate[s_tm1, s_t] += multiply_probabilities(values)
+                candidate[s_tm1, s_t] += multiply_probabilities(values, threshold)
 
             values = [tree_observation_probability(s_t, observation[tree.position[0], tree.position[1]]),
                       candidate[s_tm1, s_t]]
-            candidate[s_tm1, s_t] = multiply_probabilities(values)
+            candidate[s_tm1, s_t] = multiply_probabilities(values, threshold)
 
     return candidate
 
@@ -90,8 +87,8 @@ def run_simulation(sim_object, iteration_limit, epsilon):
         obs_acc = np.sum(obs == state)/num_trees
 
         # run filter and get belief
-        def build_candidate(element, graph):
-            return candidate_message_forest(element, graph, obs, defaultdict(lambda: (0, 0)))
+        def build_candidate(element, graph, threshold):
+            return candidate_message_forest(element, graph, threshold, obs, defaultdict(lambda: (0, 0)))
         belief, status, timing = robot.filter(sim_object, build_candidate)
         estimate = np.argmax(belief, axis=2)
         f_acc = np.sum(estimate == state)/num_trees
@@ -120,9 +117,9 @@ def benchmark(arguments):
         dimension = int(arguments[1][1:])
         Kmax = int(arguments[2][1:])
 
-    print('[RAVI] dimension = %d, Kmax = %d' % (dimension, Kmax))
-    print('[RAVI] epsilon = %e' % epsilon)
-    print('running for %d simulation(s)' % total_sims)
+    print('[RAVI] dimension = {0:d}, Kmax = {1:d}'.format(dimension, Kmax))
+    print('[RAVI] epsilon = {0:e}'.format(epsilon))
+    print('running for {0:d} simulation(s)'.format(total_sims))
 
     # dictionary for storing results for each simulation
     results = dict()
@@ -142,7 +139,7 @@ def benchmark(arguments):
     sim = LatticeForest(dimension, alpha=alpha)
 
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-    print('[%s] start' % st)
+    print('[{0}] start'.format(st))
 
     t0 = time.clock()
     for s in range(total_sims):
@@ -162,7 +159,7 @@ def benchmark(arguments):
         # periodically write to file
         if (s + 1) % 10 == 0 and (s + 1) != total_sims:
             st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-            print('[%s] finished %d simulations' % (st, s + 1))
+            print('[{0:s}] finished {1:d} simulations'.format(st, s+1))
         #
         #     filename = '[SAVE] ' + 'ravi_d' + str(dimension) + \
         #                '_Kmax' + str(Kmax) + '_eps' + str(epsilon) + \
@@ -172,9 +169,9 @@ def benchmark(arguments):
         #     output.close()
 
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-    print('[%s] finish' % st)
+    print('[{0}] finish'.format(st))
     t1 = time.clock()
-    print('%0.2fs = %0.2fm = %0.2fh elapsed' % (t1 - t0, (t1 - t0) / 60, (t1 - t0) / (60 * 60)))
+    print('{0:0.2f}s = {1:0.2f}m = {2:0.2f}h elapsed'.format(t1-t0, (t1-t0)/60, (t1-t0)/(60*60)))
 
     # write full results to file
     filename = 'ravi_d' + str(dimension) + \
@@ -187,31 +184,29 @@ def benchmark(arguments):
 
 if __name__ == '__main__':
     # the following code will run one simulation and print some statistics
-    # seed = 1023  # 1064
-    # np.random.seed(seed)
-    # dimension = 25
-    # Kmax = 1
-    # epsilon = 1e-10
-    #
-    # print('[RAVI] dimension = %d, Kmax = %d' % (dimension, Kmax))
-    #
-    # # create non-uniform grid of fire propagation parameters to model wind effects
-    # alpha = dict()
-    # alpha_start = 0.1
-    # alpha_end = 0.4
-    # for row in range(dimension):
-    #     for col in range(dimension):
-    #         alpha[(row, col)] = alpha_start + (col/(dimension-1))*(alpha_end-alpha_start)
-    # sim = LatticeForest(dimension, alpha=alpha)
-    # sim.rng = seed
-    # sim.reset()
-    #
-    # observation_accuracy, filter_accuracy, time_data = run_simulation(sim, Kmax, epsilon)
-    # print('median observation accuracy: %0.2f' % (np.median(observation_accuracy)*100))
-    # print('median filter accuracy: %0.2f' % (np.median(filter_accuracy)*100))
-    # print('{0:0.2f}, {1:0.2f}, {2:0.2f}, {3:0.2f}'.format(np.amin(filter_accuracy), np.median(filter_accuracy),
-    #                                                       np.mean(filter_accuracy), np.amax(filter_accuracy)))
-    # print('average update time: %0.4fs' % (np.mean(time_data)))
+    seed = 1023  # 1064
+    np.random.seed(seed)
+    dimension = 25
+    Kmax = 1
+    epsilon = 1e-10
+
+    print('[RAVI] dimension = {0:d}, Kmax = {1:d}'.format(dimension, Kmax))
+
+    # create non-uniform grid of fire propagation parameters to model wind effects
+    alpha = dict()
+    alpha_start = 0.1
+    alpha_end = 0.4
+    for row in range(dimension):
+        for col in range(dimension):
+            alpha[(row, col)] = alpha_start + (col/(dimension-1))*(alpha_end-alpha_start)
+    sim = LatticeForest(dimension, alpha=alpha)
+    sim.rng = seed
+    sim.reset()
+
+    observation_accuracy, filter_accuracy, time_data = run_simulation(sim, Kmax, epsilon)
+    print('median observation accuracy: {0:0.2f}'.format(np.median(observation_accuracy)*100))
+    print('median filter accuracy: {0:0.2f}'.format(np.median(filter_accuracy)*100))
+    print('average update time: {0:0.4f}s'.format(np.mean(time_data)))
 
     # the following function will run many simulations and write the results to file
-    benchmark(sys.argv)
+    # benchmark(sys.argv)

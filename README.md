@@ -1,19 +1,29 @@
 # filter-large-GHMMs
 
-A repository of methods for filtering graph-based MDPs.  
+A repository to support the paper **Scalable Filtering of Large Graph-coupled Hidden Markov Models**.
+
+Paper citation:
+```
+@InProceedings{9029382,
+  author={R. N. {Haksar} and J. {Lorenzetti} and M. {Schwager}},
+  booktitle={2019 IEEE 58th Conference on Decision and Control (CDC)}, 
+  title={Scalable Filtering of Large Graph-Coupled Hidden Markov Models}, 
+  year={2019},
+  pages={1307-1314},}
+```
 
 ## Requirements:
-- Developed with Python 3.5
+- Developed with Python 3.6
 - Requires `numpy` (version 1.16.0+)
-- Requires the [simulators](https://github.com/rhaksar/simulators) repository: clone the repository into the root level of this repository 
+- Requires the [simulators](https://github.com/rhaksar/simulators) repository
+
+## Directories:
+- `filters`: Directory with common functions and implementations of Loopy Belief Propagation (LBP) and Relaxed
+  Anonymous Variational Inference (RAVI). 
 
 ## Files:
-- `factor_graph.py`: Helper code to build factor graphs.
-- `factors.py`: Factor definition and operations for factor graphs.
-- `lbp.py`: General implementation of Loopy Belief Propagation (LBP) for filtering.
-- `lbpLatticeForest.py`: Application of LBP to the LatticeForest simulator.
-- `lbpWestAfrica.py`: Application of LBP to the WestAfrica simulator. 
-- `Observe.py`: Defines measurement models for filters. 
-- `ravi.py`: General implementation of Relaxed Anonymous Variational Inference (RAVI) for filtering. 
-- `raviLatticeForest.py`: Application of RAVI to the LatticeForest simulator.
-- `raviWestAfrica.py`: Application of RAVI to the WestAfrica simulator. 
+- `lbpLatticeForest.py`: LBP for the LatticeForest simulator.
+- `lbpWestAfrica.py`: LBP for the WestAfrica simulator. 
+- `raviLatticeForest.py`: RAVI for the LatticeForest simulator.
+- `raviWestAfrica.py`: RAVI for the WestAfrica simulator. 
+- `rbfLatticeForest.py`: Recursive Bayesian Filter for the LatticeForest simulator.

@@ -1,16 +1,14 @@
 from datetime import datetime
 import numpy as np
-import os
 import pickle
-import sys
 import time
 
-sys.path.append(os.path.dirname(os.getcwd()) + '/simulators')
-from lbp import LBP
-from epidemics.WestAfrica import WestAfrica
-from Observe import get_ebola_observation, region_observation_probability
+from simulators.epidemics.WestAfrica import WestAfrica
+from filters.lbp import LBP
+from filters.observe import get_ebola_observation, region_observation_probability
 
 
+# functions to connect LBP interface to observation and transition models for Regions
 def obs_model(region, state_value, obs_value):
     return region_observation_probability(state_value, obs_value)
 
@@ -80,8 +78,8 @@ def benchmark(arguments):
     if len(arguments) > 1:
         Kmax = int(arguments[1][1:])
 
-    print('[LBP] Kmax = %d' % Kmax)
-    print('running for %d simulation(s)' % total_sims)
+    print('[LBP] Kmax = {0:d}'.format(Kmax))
+    print('running for {0:d} simulation(s)'.format(total_sims))
 
     # dictionary for storing results for each simulation
     results = dict()
@@ -89,17 +87,12 @@ def benchmark(arguments):
     results['horizon'] = H
     results['total_sims'] = total_sims
 
-    # load model information from file
-    handle = open('simulators/west_africa_graph.pkl', 'rb')
-    graph = pickle.load(handle)
-    handle.close()
-
     # set initial condition
     outbreak = {('guinea', 'gueckedou'): 1}
-    sim = WestAfrica(graph, outbreak)
+    sim = WestAfrica(outbreak)
 
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-    print('[%s] start' % st)
+    print('[{0}] start'.format(st))
 
     t0 = time.clock()
     for s in range(total_sims):
@@ -119,7 +112,7 @@ def benchmark(arguments):
         # periodically write to file
         if (s + 1) % 10 == 0 and (s + 1) != total_sims:
             st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-            print('[%s] finished %d simulations' % (st, s + 1))
+            print('[{0}] finished {1:d} simulations'.format(st, s+1))
 
             filename = '[SAVE] ' + 'lbp_wa' + \
                        '_Kmax' + str(Kmax) + '_h' + str(H) + \
@@ -130,9 +123,9 @@ def benchmark(arguments):
 
     # save full results to file
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-    print('[%s] finish' % st)
+    print('[{0}] finish'.format(st))
     t1 = time.clock()
-    print('%0.2fs = %0.2fm = %0.2fh elapsed' % (t1 - t0, (t1 - t0) / 60, (t1 - t0) / (60 * 60)))
+    print('{0:0.2f}s = {1:0.2f}m = {2:0.2f}h elapsed'.format(t1-t0, (t1-t0)/60, (t1-t0)/(60*60)))
 
     filename = 'lbp_wa' + \
                '_Kmax' + str(Kmax) + '_h' + str(H) + \
@@ -147,21 +140,16 @@ if __name__ == '__main__':
     Kmax = 1
     H = 3
 
-    print('[LBP] Kmax = %d' % Kmax)
-
-    # load model information
-    handle = open(os.path.dirname(os.getcwd()) + '/simulators/west_africa_graph.pkl', 'rb')
-    graph = pickle.load(handle)
-    handle.close()
+    print('[LBP] Kmax = {0:d}'.format(Kmax))
 
     # set initial condition
     outbreak = {('guinea', 'gueckedou'): 1}
-    sim = WestAfrica(graph, outbreak)
+    sim = WestAfrica(outbreak)
 
     observation_accuracy, filter_accuracy, time_data = run_simulation(sim, Kmax, H)
-    print('median observation accuracy: %0.2f' % (np.median(observation_accuracy)*100))
-    print('median filter accuracy: %0.2f' % (np.median(filter_accuracy)*100))
-    print('average update time: %0.4fs' % (np.mean(time_data)))
+    print('median observation accuracy: {0:0.2f}'.format(np.median(observation_accuracy)*100))
+    print('median filter accuracy: {0:0.2f}'.format(np.median(filter_accuracy)*100))
+    print('average update time: {0:0.4f}s'.format(np.mean(time_data)))
 
     # the following function will run the filter for many simulations and write the results to file
     # benchmark(sys.argv)

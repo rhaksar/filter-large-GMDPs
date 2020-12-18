@@ -1,6 +1,5 @@
-from factors import *
+from filters.factors import assignment_to_indices, Factor
 import numpy as np
-import pdb
 
 
 class FactorGraph:
