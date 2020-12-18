@@ -1,6 +1,5 @@
 from datetime import datetime
 import numpy as np
-import os
 import pickle
 import time
 
@@ -9,6 +8,7 @@ from filters.lbp import LBP
 from filters.observe import get_ebola_observation, region_observation_probability
 
 
+# functions to connect LBP interface to observation and transition models for Regions
 def obs_model(region, state_value, obs_value):
     return region_observation_probability(state_value, obs_value)
 
@@ -87,14 +87,9 @@ def benchmark(arguments):
     results['horizon'] = H
     results['total_sims'] = total_sims
 
-    # load model information from file
-    handle = open('simulators/west_africa_graph.pkl', 'rb')
-    graph = pickle.load(handle)
-    handle.close()
-
     # set initial condition
     outbreak = {('guinea', 'gueckedou'): 1}
-    sim = WestAfrica(graph, outbreak)
+    sim = WestAfrica(outbreak)
 
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
     print('[%s] start' % st)
@@ -147,14 +142,9 @@ if __name__ == '__main__':
 
     print('[LBP] Kmax = %d' % Kmax)
 
-    # load model information
-    handle = open(os.path.dirname(os.getcwd()) + '/simulators/west_africa_graph.pkl', 'rb')
-    graph = pickle.load(handle)
-    handle.close()
-
     # set initial condition
     outbreak = {('guinea', 'gueckedou'): 1}
-    sim = WestAfrica(graph, outbreak)
+    sim = WestAfrica(outbreak)
 
     observation_accuracy, filter_accuracy, time_data = run_simulation(sim, Kmax, H)
     print('median observation accuracy: %0.2f' % (np.median(observation_accuracy)*100))
