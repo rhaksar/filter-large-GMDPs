@@ -1,12 +1,9 @@
 import itertools
 import numpy as np
-import os
-import sys
 import time
 
-sys.path.append(os.getcwd() + '/simulators')
-from factor_graph import FactorGraph
-from factors import Factor
+from filters.factor_graph import FactorGraph
+from filters.factors import Factor
 
 
 # function to map a node in the graphical model to a numerical index
@@ -16,10 +13,27 @@ def node2index(dims, idx, time):
 
 class LBP:
     """
-    Implementation of loopy belief propagation.
+    Implementation of loopy belief propagation, tailored to the simulators package; see details at
+    https://github.com/rhaksar/simulators.
     """
     def __init__(self, simulation, observation, observation_model, transition_model, prior,
                  iteration_limit=1, horizon=3):
+        """
+        Initialize filter object.
+
+        :param simulation: simulator object for a graph-based process.
+        :param observation: observation at initial time step.
+        :param observation_model: function handle describing the observation model for a single node/vertex in the
+        graph-based process. used to build the initial layer of the graphical model in the filter. arguments are
+        (node/vertex object, state value, observation value).
+        :param transition_model: function handle describing the transition model for a single node/vertex in the
+        graph-based process. used to build the initial layer of the graphical model in the filter.  arguments are
+        (node/vertex object, state values of object and neighbor objects).
+        :param prior: initial belief of the process.
+        :param iteration_limit: maximum number of message-passing iterations.
+        :param horizon: maximum number of layers in the graphical model. when adding a layer would exceed this limit,
+        prior layers are dropped.
+        """
         self.G = FactorGraph(numVar=0, numFactor=0)
         self.factorIdx = 0
         self.time = 0
@@ -40,6 +54,13 @@ class LBP:
 
         First, this function builds the nodes for each new simulation element at the current time.
         Then, it adds factors for measurements. If self.time > 0 then factors are added for the dynamics.
+
+        :param simulation: simulator object for a graph-based process.
+        :param observation: observation for the current time step.
+        :param observation_model: function handle describing the observation model for a single node/vertex in the
+        graph-based process. arguments are (node/vertex object, state value, observation value).
+        :param transition_model: function handle describing the transition model for a single node/vertex in the
+        graph-based process. arguments are (node/vertex object, state values of object and neighbor objects).
         """
         # number of factors and variables
         num_nodes = np.prod(simulation.dims)
@@ -107,12 +128,9 @@ class LBP:
                 card = [len(element.state_space) for _ in range(len(scope))]
                 val = np.zeros(card)
                 iterate = [element.state_space for _ in range(len(scope))]
-                for combo in itertools.product(*iterate):
-                    # x_tm1 = combo[0]
-                    # f = combo[1:-1].count(self.infected)
-                    # x_t = combo[-1]
 
-                    # val[combo] = element.dynamics((x_tm1, f, x_t), (0, 0))
+                # iterate through all combination of states for the factor and the other connected factors
+                for combo in itertools.product(*iterate):
                     val[combo] = transition_model(element, combo)
 
                 name = 'f_%i%i' % (element.numeric_id, self.time-1)
@@ -131,6 +149,18 @@ class LBP:
     def filter(self, simulation, observation, observation_model, transition_model):
         """
         Method to build the graphical model and generate the belief.
+
+        :param simulation: simulator object for a graph-based process.
+        :param observation: observation for the current time step.
+        :param observation_model: function handle describing the observation model for a single node/vertex in the
+        graph-based process. arguments are (node/vertex object, state value, observation value).
+        :param transition_model: function handle describing the transition model for a single node/vertex in the
+        graph-based process. arguments are (node/vertex object, state values of object and neighbor objects).
+
+        :return belief: updated belief for last layer in the filter's graphical model.
+        :return status: tuple of (status, iterations), indicating whether or not the filter converged ('Converged' or
+        'Cutoff') and the number of iterations taken (which will be at most the message-passing iteration limit).
+        :return time: time taken for the filter to update the belief.
         """
         tic = time.clock()
         self.observation_history += [observation]
@@ -169,6 +199,12 @@ class LBP:
         """
         Method to get belief from graphical model. Returns a dictionary where each key is the name of a simulation
         element and values correspond to a list with a probability for each element state.
+
+        :param simulation: simulation object for a graph-based process.
+        :param time: time (i.e., layer) at which to query the belief.
+
+        :return belief: maximum-likelihood belief as a dictionary, each key is an ID referring to a node/vertex
+        (defined by the simulation object) and refers to the maximum-likelihood state value.
         """
         belief = {}
 
