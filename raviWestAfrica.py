@@ -1,9 +1,7 @@
 from collections import defaultdict
 from datetime import datetime
 import numpy as np
-import os
 import pickle
-import sys
 import time
 
 from simulators.epidemics.WestAfrica import WestAfrica
@@ -11,7 +9,7 @@ from filters.observe import get_ebola_observation, region_observation_probabilit
 from filters.ravi import RAVI, multiply_probabilities
 
 
-def candidate_message_westafrica(region, filter_graph, observation):
+def candidate_message_westafrica(region, filter_graph, threshold, observation):
     candidate = np.zeros((len(region.state_space), len(region.state_space)))
     num_neighbors = len(region.neighbors)
 
@@ -33,17 +31,17 @@ def candidate_message_westafrica(region, filter_graph, observation):
 
             values.append(prob)
 
-        caf[active] += multiply_probabilities(values)
+        caf[active] += multiply_probabilities(values, threshold)
 
     # construct candidate message, a function of x_{i}^{t-1} and x_{i}^{t}
     for s_t in region.state_space:
         for s_tm1 in region.state_space:
             for active in range(num_neighbors+1):
                 values = [region.dynamics((s_tm1, active, s_t)), caf[active]]
-                candidate[s_tm1, s_t] += multiply_probabilities(values)
+                candidate[s_tm1, s_t] += multiply_probabilities(values, threshold)
 
             values = [region_observation_probability(s_t, observation[region.name]), candidate[s_tm1, s_t]]
-            candidate[s_tm1, s_t] = multiply_probabilities(values)
+            candidate[s_tm1, s_t] = multiply_probabilities(values, threshold)
 
     return candidate
 
@@ -80,8 +78,8 @@ def run_simulation(sim_object, iteration_limit, epsilon):
         obs_acc = [obs[name] == state[name] for name in state.keys()].count(True)/num_regions
 
         # run filter and get belief
-        def build_candidate(element, graph):
-            return candidate_message_westafrica(element, graph, obs)
+        def build_candidate(element, graph, threshold):
+            return candidate_message_westafrica(element, graph, threshold, obs)
         belief, status, timing = robot.filter(sim_object, build_candidate)
         estimate = {name: np.argmax(belief[name]) for name in state.keys()}
         f_acc = [estimate[name] == state[name] for name in state.keys()].count(True)/num_regions
@@ -118,14 +116,9 @@ def benchmark(arguments):
     results['epsilon'] = epsilon
     results['total_sims'] = total_sims
 
-    # load model information from file
-    handle = open(os.path.dirname(os.getcwd()) + '/simulators/west_africa_graph.pkl', 'rb')
-    graph = pickle.load(handle)
-    handle.close()
-
     # initial condition
     outbreak = {('guinea', 'gueckedou'): 1}
-    sim = WestAfrica(graph, outbreak)
+    sim = WestAfrica(outbreak)
 
     st = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
     print('[%s] start' % st)
@@ -173,24 +166,19 @@ def benchmark(arguments):
 
 if __name__ == '__main__':
     # the following code will run one simulation with RAVI and print some statistics
-    # Kmax = 5
-    # epsilon = 1e-10
-    #
-    # print('[RAVI] Kmax = %d' % Kmax)
-    #
-    # # load model information
-    # handle = open('simulators/west_africa_graph.pkl', 'rb')
-    # graph = pickle.load(handle)
-    # handle.close()
-    #
-    # # set initial condition
-    # outbreak = {('guinea', 'gueckedou'): 1}
-    # sim = WestAfrica(graph, outbreak)
-    #
-    # observation_accuracy, filter_accuracy, time_data = run_simulation(sim, Kmax, epsilon)
-    # print('median observation accuracy: %0.2f' % (np.median(observation_accuracy)*100))
-    # print('median filter accuracy: %0.2f' % (np.median(filter_accuracy)*100))
-    # print('average update time: %0.4fs' % (np.mean(time_data)))
+    Kmax = 5
+    epsilon = 1e-10
+
+    print('[RAVI] Kmax = %d' % Kmax)
+
+    # set initial condition
+    outbreak = {('guinea', 'gueckedou'): 1}
+    sim = WestAfrica(outbreak)
+
+    observation_accuracy, filter_accuracy, time_data = run_simulation(sim, Kmax, epsilon)
+    print('median observation accuracy: %0.2f' % (np.median(observation_accuracy)*100))
+    print('median filter accuracy: %0.2f' % (np.median(filter_accuracy)*100))
+    print('average update time: %0.4fs' % (np.mean(time_data)))
 
     # the following function will run the filter for many simulations and write the results to file
-    benchmark(sys.argv)
+    # benchmark(sys.argv)
